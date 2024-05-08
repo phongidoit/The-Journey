@@ -1,0 +1,11 @@
+Model Information:
+* title:	Journey
+* source:	https://sketchfab.com/3d-models/journey-c61b8c8142bb421ea9651f77153e3506
+* author:	Morganicism (https://sketchfab.com/morganicism)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Journey" (https://sketchfab.com/3d-models/journey-c61b8c8142bb421ea9651f77153e3506) by Morganicism (https://sketchfab.com/morganicism) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
