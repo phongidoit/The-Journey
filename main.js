@@ -9,29 +9,31 @@ var playerSpeed = 10;
 var physicsSteps = 5;
 var gravity = -10;
 
-let camera, controls;
-
-var scene, renderer, clock;
+var scene, clock;
 var keyboard = {};
 var moveSpeed = 10;
-var rotateSpeed = Math.PI / 2;
-var cameraPosition = new THREE.Vector3(0, 0, 200);
+var delta = 0;
+var rotateSpeed = Math.PI / 2 * 1.5;
+var cameraPosition = new THREE.Vector3(3, 4, 10);
 var cameraRotation = new THREE.Vector3(0, 0, 0);
 
+var playerPos = new THREE.Vector3(0, 0.3, 0);
+var playerRot = new THREE.Vector3(0, 0, 0);
+
 function init(){
-    scene = new THREE.Scene();
+    var scene = new THREE.Scene();
     //var gui = new dat.GUI();    
 
     //------environment------
     var plane = getPlane(60);
-    var clock = new THREE.Clock();
+    clock = new THREE.Clock();
 
     var light = getSpotLight(0.5);
     var ampLight = getAmbientLight(0.5); 
     const loaderChar = new GLTFLoader();
     const loaderPyra = new GLTFLoader();
 
-    camera = new THREE.PerspectiveCamera(
+    var camera = new THREE.PerspectiveCamera(
         50,
         window.innerWidth/window.innerHeight,
         0.1,
@@ -81,7 +83,6 @@ function init(){
     player.scale.set(0.2, 0.2, 0.2);
     player.position.y=0.3;
     
-
     camera.position.x = 3; camera.position.y = 6; camera.position.z = 10;
     camera.lookAt(new THREE.Vector3(0, 0, 0));
 
@@ -91,21 +92,21 @@ function init(){
     renderer.setClearColor('rgb(120,120,120)');
     document.getElementById('webgl').appendChild(renderer.domElement);
 
-    controls = new OrbitControls(camera, renderer.domElement);
+    var controls = new OrbitControls(camera, renderer.domElement);
     controls.update();
 
     document.addEventListener('keydown', function(event) {
         keyboard[event.key] = true;
     });
 
-    document.addEventListener('keydown', function(event) {
+    document.addEventListener('keyup', function(event) {
         keyboard[event.key] = false;
     });
 
-    update(renderer, scene, camera, controls);
+    update(renderer, scene, camera, controls, player);
+    //animate(renderer, scene, camera, controls);
     return scene;
 }
-
 
 function getPlane(size){
     var geometry = new THREE.PlaneGeometry(size, size);
@@ -150,43 +151,46 @@ function getSphere(r){
     return mesh;
 }
 
-function update(renderer, scene, camera, controls){
+function update(renderer, scene, camera, controls, player){
     renderer.render(
         scene,
         camera
     );
 
     controls.update();
-    animate();
 
     requestAnimationFrame(function(){
-        update(renderer, scene, camera, controls);
+        update(renderer, scene, camera, controls, player);
     })
+    delta = clock.getDelta();
+    handleKeyboardInput(delta, camera, player);
+    camera.lookAt(player.position);
 }
 
-function animate() {
-    var delta = clock.getDelta();
-    requestAnimationFrame(animate);
-    controls.update(delta);
-    handleKeyboardInput(delta);
-    renderer.render(scene, camera);
-}
 
-function handleKeyboardInput(delta) {
-    if (keyboard['W']) {
-      cameraPosition.z -= moveSpeed * delta;
+function handleKeyboardInput(delta, camera, player) {
+    const direction = new THREE.Vector3();
+    player.getWorldDirection(direction);
+
+
+    if (keyboard['W'] || keyboard['w']) {
+      //playerPos.z -= moveSpeed * delta;
+      player.position.add(direction.multiplyScalar(-moveSpeed * delta));
     }
-    if (keyboard['S']) {
-      cameraPosition.z += moveSpeed * delta;
+    if (keyboard['S']|| keyboard['s']) {
+        //playerPos.z += moveSpeed * delta;
+        player.position.add(direction.multiplyScalar(moveSpeed * delta));
     }
-    if (keyboard['A']) {
-      cameraRotation.y += rotateSpeed * delta;
+    if (keyboard['A']|| keyboard['a']) {
+        playerRot.y += rotateSpeed * delta;
     }
-    if (keyboard['D']) {
-      cameraRotation.y -= rotateSpeed * delta;
+    if (keyboard['D']|| keyboard['d']) {
+        playerRot.y -= rotateSpeed * delta;
     }
-    camera.position.copy(cameraPosition);
-    camera.rotation.setFromVector3(cameraRotation);
+    //player.position.copy(playerPos);
+    player.rotation.setFromVector3(playerRot);
+
+    console.log(player.rotation.y);
 }
 
 
