@@ -5,8 +5,7 @@ import { RoundedBoxGeometry } from './source/RoundedBoxGeometry.js';
 
 
     //------player-------
-var playerSpeed = 10;
-var physicsSteps = 5;
+
 var gravity = -10;
 
 var scene, clock;
@@ -17,8 +16,15 @@ var rotateSpeed = Math.PI / 2 * 1.5;
 var cameraPosition = new THREE.Vector3(3, 4, 10);
 var cameraRotation = new THREE.Vector3(0, 0, 0);
 
-var playerPos = new THREE.Vector3(0, 0.3, 0);
+var  startYPosition = 0.3;
+var playerPos = new THREE.Vector3(0, startYPosition, 0);
 var playerRot = new THREE.Vector3(0, 0, 0);
+var jumpVelocity =  10;
+
+var cameraDeviation = new THREE.Vector3(-5, 4, -10);
+
+var freecam= true, updatedTemp=false, tempPos;
+
 
 function init(){
     var scene = new THREE.Scene();
@@ -93,14 +99,20 @@ function init(){
     document.getElementById('webgl').appendChild(renderer.domElement);
 
     var controls = new OrbitControls(camera, renderer.domElement);
-    controls.update();
+    //controls.update();
 
     document.addEventListener('keydown', function(event) {
         keyboard[event.key] = true;
+        freecam=false;
     });
 
     document.addEventListener('keyup', function(event) {
         keyboard[event.key] = false;
+        freecam = true;
+    });
+
+    document.addEventListener('click', function(event) {
+        freecam=true;
     });
 
     update(renderer, scene, camera, controls, player);
@@ -157,14 +169,40 @@ function update(renderer, scene, camera, controls, player){
         camera
     );
 
-    controls.update();
-
     requestAnimationFrame(function(){
         update(renderer, scene, camera, controls, player);
     })
     delta = clock.getDelta();
     handleKeyboardInput(delta, camera, player);
+
+    if (!freecam){
+        if (!updatedTemp)
+        {    
+            tempPos = player.position.clone();
+            tempPos.add(cameraDeviation);
+        }
+        else{
+            //console.log('here');
+            cameraDeviation.set(
+                camera.position.x-player.position.x,
+                camera.position.y-player.position.y,
+                camera.position.z-player.position.z,
+
+            );
+        }
+        //console.log(tempPos);
+        camera.position.set(tempPos.x, tempPos.y, tempPos.z);
+        controls.target.set(player.position.x, player.position.y, player.position.z);
+        updatedTemp = false;
+    }
+    else{
+        tempPos = camera.position;
+        updatedTemp= true;
+    }
+    
     camera.lookAt(player.position);
+    controls.update();
+    //console.log(freecam, updatedTemp);
 }
 
 
@@ -187,10 +225,14 @@ function handleKeyboardInput(delta, camera, player) {
     if (keyboard['D']|| keyboard['d']) {
         playerRot.y -= rotateSpeed * delta;
     }
+    if (keyboard[" "]){
+        if (player.position.y != startYPosition){
+            
+        }
+    }
     //player.position.copy(playerPos);
     player.rotation.setFromVector3(playerRot);
 
-    console.log(player.rotation.y);
 }
 
 
