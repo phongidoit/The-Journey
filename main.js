@@ -31,14 +31,12 @@ function init(){
     //var gui = new dat.GUI();    
 
     //------environment------
-    var plane = getPlane(60);
+    var map = getMap();  //build terrain here
     clock = new THREE.Clock();
 
     var light = getSpotLight(0.5);
     var ampLight = getAmbientLight(0.5); 
-    const loaderChar = new GLTFLoader();
-    const loaderPyra = new GLTFLoader();
-
+    
     var camera = new THREE.PerspectiveCamera(
         50,
         window.innerWidth/window.innerHeight,
@@ -59,32 +57,10 @@ function init(){
     player.castShadow = true;
     scene.add(player);
 
-    //---Map stuff----
-    loaderPyra.load(
-        // resource URL
-        'source/Pyramid/scene.gltf',
-        // called when the resource is loaded
-        function ( gltf ) {
-            
-            scene.add( gltf.scene );
-            //gltf.scene.scale.set(, 0.5, 0.5);
-            gltf.scene.position.y = 0;
-            gltf.scene.position.x = 25;
-    
-            gltf.animations; // Array<THREE.AnimationClip>
-            gltf.scene; // THREE.Group
-            gltf.scenes; // Array<THREE.Group>
-            gltf.cameras; // Array<THREE.Camera>
-            gltf.asset; // Object
-            
-    
-        }
-    );
-
-    scene.add(plane);
+    scene.add(map);
     scene.add(light);
     scene.add(ampLight);
-    plane.rotation.x = -Math.PI/2;
+    
     light.position.y = 40;
     player.scale.set(0.2, 0.2, 0.2);
     player.position.y=0.3;
@@ -161,6 +137,36 @@ function getSphere(r){
         material
     );
     return mesh;
+}
+
+function getMap(){
+    var map = new THREE.Object3D();
+    var plane = getPlane(60);
+    plane.rotation.x = -Math.PI/2;
+
+    const loaderChar = new GLTFLoader();
+    const loaderPyra = new GLTFLoader();
+    map.add(plane);
+
+    loaderPyra.load(
+        // resource URL
+        'source/Pyramid/scene.gltf',
+        // called when the resource is loaded
+        function ( gltf ) { 
+            map.add( gltf.scene );
+            gltf.scene.scale.set(2, 2, 2);
+            gltf.scene.position.y = 0;
+            gltf.scene.position.x = 25;
+    
+            gltf.animations; // Array<THREE.AnimationClip>
+            gltf.scene; // THREE.Group
+            gltf.scenes; // Array<THREE.Group>
+            gltf.cameras; // Array<THREE.Camera>
+            gltf.asset; // Object
+             
+        }
+    );
+    return map;
 }
 
 function update(renderer, scene, camera, controls, player){
