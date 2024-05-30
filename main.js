@@ -2,32 +2,44 @@ import * as THREE from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoundedBoxGeometry } from './source/RoundedBoxGeometry.js';
-
+import * as CANNON from 'cannon-es';
+import CannonDebugger from './node_modules/cannon-es-debugger/dist/cannon-es-debugger.js';
 
     //------player-------
 
 var gravity = -10;
 
-var scene, clock;
+var scene, clock, world, timeStep=1/60, player, playerBody, controls;
+var renderer = new THREE.WebGLRenderer();
+renderer.shadowMap.enabled=true;
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor('rgb(120,120,120)');
+document.getElementById('webgl').appendChild(renderer.domElement);
+
+//var controls = new OrbitControls(camera, renderer.domElement);
+var camera = new THREE.PerspectiveCamera( 50, window.innerWidth/window.innerHeight, 0.1, 50);
+window.camera = camera;
+
 var keyboard = {};
 var moveSpeed = 10;
 var delta = 0;
 var rotateSpeed = Math.PI / 2 * 1.5;
-var cameraPosition = new THREE.Vector3(3, 4, 10);
-var cameraRotation = new THREE.Vector3(0, 0, 0);
 
-var  startYPosition = 0.3;
+var startYPosition = 0.3;
 var playerPos = new THREE.Vector3(0, startYPosition, 0);
 var playerRot = new THREE.Vector3(0, 0, 0);
 var jumpVelocity =  10;
 
+var isOnGround = true;
 var cameraDeviation = new THREE.Vector3(-5, 4, -10);
 
 var freecam= true, updatedTemp=false, tempPos;
+scene = new THREE.Scene();
+world = new CANNON.World();
+var cannonDebugger = new CannonDebugger( scene, world );
 
 
 function init(){
-    var scene = new THREE.Scene();
     //var gui = new dat.GUI();    
 
     //------environment------
@@ -37,22 +49,15 @@ function init(){
     var light = getSpotLight(0.5);
     var ampLight = getAmbientLight(0.5); 
     
-    var camera = new THREE.PerspectiveCamera(
-        50,
-        window.innerWidth/window.innerHeight,
-        0.1,
-        50
-    );
-    window.camera = camera;
 
-    var player = new THREE.Mesh(
+    player = new THREE.Mesh(
 		new RoundedBoxGeometry( 1.0, 2.0, 1.0, 10, 0.5 ),
 		new THREE.MeshStandardMaterial()
 	);
     player.geometry.translate(0, -0.5, 0);
     player.capsuleInfo = {
         radius: 0.5, 
-        segment: new THREE.Line3(new THREE.Vector3(), new THREE.Vector3(0, -1.0, 0))
+        segment: new THREE.Line3(new THREE.Vector3(), new THREE.Vector3(0, 0.0, 0))
     };
     player.castShadow = true;
     scene.add(player);
@@ -68,13 +73,7 @@ function init(){
     camera.position.x = 3; camera.position.y = 6; camera.position.z = 10;
     camera.lookAt(new THREE.Vector3(0, 0, 0));
 
-    var renderer = new THREE.WebGLRenderer();
-    renderer.shadowMap.enabled=true;
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor('rgb(120,120,120)');
-    document.getElementById('webgl').appendChild(renderer.domElement);
-
-    var controls = new OrbitControls(camera, renderer.domElement);
+    controls = new OrbitControls(camera, renderer.domElement)
     //controls.update();
 
     document.addEventListener('keydown', function(event) {
@@ -91,9 +90,34 @@ function init(){
         freecam=true;
     });
 
-    update(renderer, scene, camera, controls, player);
+    //update(renderer, scene, camera, controls, player);
     //animate(renderer, scene, camera, controls);
     return scene;
+}
+
+function initCannon() {
+    world.gravity.set(0,-5,0);
+    world.broadphase = new CANNON.NaiveBroadphase();
+    world.solver.iterations = 10;
+
+    var radius = 1; // m
+    playerBody = new CANNON.Body({
+        mass: 1, // kg
+        position: new CANNON.Vec3(0, 0.1, 0),// m
+        shape: new CANNON.Box(new CANNON.Vec3(0.12, 0.2, 0.12))
+    });
+    playerBody.angularVelocity.set(0,10,0);
+    playerBody.angularDamping = 0.0;
+    world.addBody(playerBody);
+
+    // Create a plane
+    var groundBody = new CANNON.Body({
+        mass: 0 // mass == 0 makes the body static
+    });
+    var groundShape = new CANNON.Plane();
+    groundBody.addShape(groundShape);
+    groundBody.quaternion.setFromEuler(-Math.PI/2, 0, 0);
+    world.addBody(groundBody);
 }
 
 function getPlane(size){
@@ -155,7 +179,7 @@ function getMap(){
         function ( gltf ) { 
             map.add( gltf.scene );
             gltf.scene.scale.set(2, 2, 2);
-            gltf.scene.position.y = 0;
+            gltf.scene.position.y = 0.1;
             gltf.scene.position.x = 25;
     
             gltf.animations; // Array<THREE.AnimationClip>
@@ -170,6 +194,8 @@ function getMap(){
 }
 
 function update(renderer, scene, camera, controls, player){
+    updatePhysics();
+    cannonDebugger.update(); 
     renderer.render(
         scene,
         camera
@@ -211,6 +237,16 @@ function update(renderer, scene, camera, controls, player){
     //console.log(freecam, updatedTemp);
 }
 
+function updatePhysics() {
+    // Step the physics world
+    world.step(timeStep);
+
+    // Copy coordinates from Cannon.js to Three.js
+    player.position.copy(playerBody.position);
+    player.position.y += 0.1;
+    player.quaternion.copy(playerBody.quaternion);
+}
+
 
 function handleKeyboardInput(delta, camera, player) {
     const direction = new THREE.Vector3();
@@ -238,10 +274,12 @@ function handleKeyboardInput(delta, camera, player) {
     }
     //player.position.copy(playerPos);
     player.rotation.setFromVector3(playerRot);
-
 }
 
 
 var scene = init();
-console.log(scene);
+console.log("Physic engine loaded")
+initCannon();
+update(renderer, scene, camera, controls, player);
+
 globalThis.scene = scene;
