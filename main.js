@@ -68,7 +68,7 @@ function init(){
     
     light.position.y = 40;
     player.scale.set(0.2, 0.2, 0.2);
-    player.position.y=0.3;
+    player.position.y=0;
     
     camera.position.x = 3; camera.position.y = 6; camera.position.z = 10;
     camera.lookAt(new THREE.Vector3(0, 0, 0));
@@ -90,24 +90,21 @@ function init(){
         freecam=true;
     });
 
-    //update(renderer, scene, camera, controls, player);
-    //animate(renderer, scene, camera, controls);
     return scene;
 }
 
 function initCannon() {
-    world.gravity.set(0,-5,0);
+    world.gravity.set(0,-12,0);
     world.broadphase = new CANNON.NaiveBroadphase();
-    world.solver.iterations = 10;
+    world.solver.iterations = 1;
 
-    var radius = 1; // m
     playerBody = new CANNON.Body({
-        mass: 1, // kg
+        mass: 25, // kg
         position: new CANNON.Vec3(0, 0.1, 0),// m
         shape: new CANNON.Box(new CANNON.Vec3(0.12, 0.2, 0.12))
     });
-    playerBody.angularVelocity.set(0,10,0);
-    playerBody.angularDamping = 0.0;
+    playerBody.angularVelocity.set(0,0,0);
+    playerBody.angularDamping = 0.0002;
     world.addBody(playerBody);
 
     // Create a plane
@@ -243,7 +240,7 @@ function updatePhysics() {
 
     // Copy coordinates from Cannon.js to Three.js
     player.position.copy(playerBody.position);
-    player.position.y += 0.1;
+    player.position.y += 0.15;
     player.quaternion.copy(playerBody.quaternion);
 }
 
@@ -251,15 +248,17 @@ function updatePhysics() {
 function handleKeyboardInput(delta, camera, player) {
     const direction = new THREE.Vector3();
     player.getWorldDirection(direction);
-
-
+    //var tempPos = player.copy();
+    //console.log(tempPos)
     if (keyboard['W'] || keyboard['w']) {
-      //playerPos.z -= moveSpeed * delta;
-      player.position.add(direction.multiplyScalar(-moveSpeed * delta));
+        player.position.add(direction.multiplyScalar(-moveSpeed * delta));
+        playerBody.position.x = player.position.x;
+        playerBody.position.z = player.position.z;
     }
     if (keyboard['S']|| keyboard['s']) {
-        //playerPos.z += moveSpeed * delta;
         player.position.add(direction.multiplyScalar(moveSpeed * delta));
+        playerBody.position.x = player.position.x;
+        playerBody.position.z = player.position.z;
     }
     if (keyboard['A']|| keyboard['a']) {
         playerRot.y += rotateSpeed * delta;
@@ -268,12 +267,16 @@ function handleKeyboardInput(delta, camera, player) {
         playerRot.y -= rotateSpeed * delta;
     }
     if (keyboard[" "]){
-        if (player.position.y != startYPosition){
-            
+        if (player.position.y <= startYPosition+0.1){
+            playerBody.velocity.y = jumpVelocity;
         }
     }
-    //player.position.copy(playerPos);
+
+    
     player.rotation.setFromVector3(playerRot);
+    //playerBody.quaternion.y = player.rotation.y;
+    playerBody.quaternion.copy(player.quaternion);
+
 }
 
 
