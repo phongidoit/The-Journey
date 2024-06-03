@@ -4,12 +4,13 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoundedBoxGeometry } from './source/RoundedBoxGeometry.js';
 import * as CANNON from 'cannon-es';
 import CannonDebugger from './node_modules/cannon-es-debugger/dist/cannon-es-debugger.js';
+import { threeToCannon, ShapeType } from 'three-to-cannon';
 
     //------player-------
 
 var gravity = -10;
 
-var scene, clock, world, timeStep=1/60, player, playerBody, controls, followCam;
+var scene, clock, world, timeStep=1/60, player, playerBody, controls, followCam, testCam;
 var renderer = new THREE.WebGLRenderer();
 renderer.shadowMap.enabled=true;
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -21,22 +22,25 @@ var camera = new THREE.PerspectiveCamera( 50, window.innerWidth/window.innerHeig
 window.camera = camera;
 
 var keyboard = {};
-var moveSpeed = 10;
+var moveSpeed = 6;
 var delta = 0;
 var rotateSpeed = Math.PI / 2 * 5;
 
 var startYPosition = 0.3;
 var playerPos = new THREE.Vector3(0, startYPosition, 0);
 var playerRot = new THREE.Vector3(0, 0, 0);
-var jumpVelocity =  8;
+var jumpVelocity =  6;
 
 var isOnGround = true;
-var cameraDeviation = new THREE.Vector3(-5, 4, -10);
 
-var freecam= true, updatedTemp=false, tempPos;
 scene = new THREE.Scene();
 world = new CANNON.World();
 var cannonDebugger = new CannonDebugger( scene, world );
+
+//---here are model stuff for physic---
+var pyramid, pyramidBody = new CANNON.Body();
+var firstLoad=true;
+var clock2=new THREE.Clock();
 
 
 function init(){
@@ -62,16 +66,25 @@ function init(){
         radius: 0.5, 
         segment: new THREE.Line3(new THREE.Vector3(), new THREE.Vector3(0, 0.0, 0))
     };
-    followCam = getSphere(0.4);
-    followCam.position.z = 8;
+    followCam = new THREE.Object3D;
+    followCam.position.z = 22;
     followCam.position.y = 2;
-    player.add(followCam); 
+
+
+    player.add(followCam);
+ 
     player.castShadow = true;
+    
     scene.add(player);
+
+    //--where camera is--
+    testCam = getSphere(0.3, 'red');
+    followCam.getWorldPosition(testCam.position);
+    //scene.add(testCam);
 
     scene.add(map);
     scene.add(light);
-    scene.add(ampLight);
+    
     
     light.position.y = 40;
     player.scale.set(0.2, 0.2, 0.2);
@@ -80,21 +93,20 @@ function init(){
     camera.position.x = 3; camera.position.y = 6; camera.position.z = 10;
     camera.lookAt(new THREE.Vector3(0, 0, 0));
     controls = new OrbitControls(camera, renderer.domElement);
-    controls.maxPolarAngle = Math.PI*7.5/16;
+    controls.maxPolarAngle = Math.PI*7.75/16;
 
     //controls.update();
     document.addEventListener('keydown', function(event) {
         keyboard[event.key] = true;
-        if (event.key != " "){
-            freecam=false;
-        }
+        controls.enabled =false;
+
     });
     document.addEventListener('keyup', function(event) {
         keyboard[event.key] = false;
-        freecam = true;
+
     });
     document.addEventListener('click', function(event) {
-        freecam=true;
+
     });
     return scene;
 }
@@ -105,12 +117,14 @@ function initCannon() {
     world.solver.iterations = 10;
 
     playerBody = new CANNON.Body({
-        mass: 25, // kg
+        mass: 40, // kg
         position: new CANNON.Vec3(0, 0.1, 0),// m
         shape: new CANNON.Box(new CANNON.Vec3(0.12, 0.2, 0.12))
     });
     playerBody.angularVelocity.set(0,0,0);
-    playerBody.angularDamping = 0.0002;
+    playerBody.angularDamping = 1;
+    
+    playerBody.addEventListener("collide",function(e){isOnGround=true;})
     world.addBody(playerBody);
 
     // Create a plane
@@ -120,28 +134,36 @@ function initCannon() {
     var groundShape = new CANNON.Plane();
     groundBody.addShape(groundShape);
     groundBody.quaternion.setFromEuler(-Math.PI/2, 0, 0);
+
+    world.addBody(pyramidBody);
     world.addBody(groundBody);
 }
 
 function getPlane(size){
-    var geometry = new THREE.PlaneGeometry(size, size);
+    var geometry = new THREE.PlaneGeometry(size, size, 100, 100);
 
     var textureLoader = new THREE.TextureLoader();
-    var material = new THREE.MeshBasicMaterial({
+    var terrainLoader = new THREE.TextureLoader().load('./source/HeightMap1.png');
+    terrainLoader.wrapS = terrainLoader.wrapT = THREE.RepeatWrapping;
+    terrainLoader.repeat.set(1,2);
+    var material = new THREE.MeshStandardMaterial({
         color: 0xf6d7b0,
-        side: THREE.DoubleSide
+        wireframe: false,
+        side: THREE.DoubleSide,
+
     });
     material.map = textureLoader.load('./source/sand_texture.jpg');
     material.map.wrapS = THREE.RepeatWrapping;
     material.map.wrapT = THREE.RepeatWrapping;
-    material.map.repeat.set(6,6);
-    //material.bumpMap = textureLoader.load('./source/sand_texture.jpg');
+    material.map.repeat.set(30,30);
+
 
     var mesh = new THREE.Mesh(
         geometry,
-        material
+        material,
     );
     mesh.receiveShadow=true;
+    //mesh.position.y = -1;
     return mesh;
 }
 
@@ -160,10 +182,10 @@ function getSpotLight(intensity){
     return light;
 }
 
-function getSphere(r){
+function getSphere(r, color){
     var geometry = new THREE.SphereGeometry(r);
     var material = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
+        color: color,
         material
     });
     var mesh = new THREE.Mesh(
@@ -175,8 +197,10 @@ function getSphere(r){
 
 function getMap(){
     var map = new THREE.Object3D();
+    map.name="map";
     
-    var plane = getPlane(60);
+    var plane = getPlane(300);
+    plane.name = 'ground';
     plane.rotation.x = -Math.PI/2;
 
     const loaderChar = new GLTFLoader();
@@ -200,10 +224,21 @@ function getMap(){
             gltf.asset; // Object     
         }
     );
+    
     return map;
 }
 
 function update(renderer, scene, camera, controls, player){
+    pyramid = scene.getObjectByName("Sketchfab_model");
+    
+    var t= clock2.getElapsedTime();
+    if (pyramid && t<1.03 && t>1){
+        var result = threeToCannon(pyramid, {type: ShapeType.HULL});
+        const {shape, offset, orientation} = result;      
+        pyramidBody.addShape(shape, offset, orientation);
+        pyramidBody.position.x = 25;
+        firstLoad=false;
+    }
     updatePhysics();
     cannonDebugger.update(); 
     renderer.render(
@@ -213,38 +248,19 @@ function update(renderer, scene, camera, controls, player){
 
     requestAnimationFrame(function(){
         update(renderer, scene, camera, controls, player);
-        //console.log(followCam.matrixWorld);
-        camera.position.setFromMatrixPosition(followCam.matrixWorld);
-        camera.lookAt(player.position);
+        var midVec = new THREE.Vector3, followPos = new THREE.Vector3;
+        midVec.copy(camera.position);            
+        followCam.getWorldPosition(followPos);
+        midVec.lerp(followPos, 0.1);            
+        testCam.position.copy(midVec);
+        camera.position.copy(midVec);
+        camera.lookAt(player.position);      
     })
     delta = clock.getDelta();
     
-    controls.update();
+    //console.log("Ground", isOnGround);
     handleKeyboardInput(delta, camera, player);
 
-    // if (!freecam){
-    //     if (!updatedTemp)
-    //     {    
-    //         tempPos = player.position.clone();
-    //         tempPos.add(cameraDeviation);
-    //     }
-    //     else{
-    //         //console.log('here');
-    //         cameraDeviation.set(
-    //             camera.position.x-player.position.x,
-    //             camera.position.y-player.position.y,
-    //             camera.position.z-player.position.z,
-    //         );
-    //     }
-    //     //console.log(tempPos);
-    //     camera.position.set(tempPos.x, tempPos.y, tempPos.z);
-    //     controls.target.set(player.position.x, player.position.y, player.position.z);
-    //     updatedTemp = false;
-    // }
-    // else{
-    //     tempPos = camera.position;
-    //     updatedTemp= true;
-    // }
 
 }
 
@@ -256,11 +272,6 @@ function updatePhysics() {
     player.position.copy(playerBody.position);
     player.position.y += 0.12;
     player.quaternion.copy(playerBody.quaternion);
-}
-
-function RoundNum(num)
-{
-    return Math.round(num*100)/100;
 }
 
 function AnyInput(keyboard){
@@ -276,8 +287,9 @@ function AnyInput(keyboard){
 function handleKeyboardInput(delta, camera, player) {
 
     if (keyboard[" "]){
-        if (player.position.y <= startYPosition+0.1){
+        if (isOnGround){
             playerBody.velocity.y = jumpVelocity;
+            isOnGround=false;
         }
     }
     if (AnyInput(keyboard)){
@@ -302,11 +314,9 @@ function handleKeyboardInput(delta, camera, player) {
         }        
        player.rotation.setFromVector3(playerRot);
 
-        //player.position.add(direction.multiplyScalar(-moveSpeed * delta));
         playerBody.position.x = player.position.x;
         playerBody.position.z = player.position.z;
-    } 
-    
+    }  
     playerBody.quaternion.copy(player.quaternion);
     
 }
