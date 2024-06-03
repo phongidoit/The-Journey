@@ -35,7 +35,7 @@ var isOnGround = true;
 
 scene = new THREE.Scene();
 world = new CANNON.World();
-var cannonDebugger = new CannonDebugger( scene, world );
+//var cannonDebugger = new CannonDebugger( scene, world );
 
 //---here are model stuff for physic---
 var pyramid, pyramidBody = new CANNON.Body();
@@ -48,8 +48,8 @@ function init(){
     var map = getMap();  //build terrain here
     clock = new THREE.Clock();
 
-    var light = getSpotLight(0.5);
-    var ampLight = getAmbientLight(0.5);     
+    var light = getSpotLight(0.7);
+    var ampLight = getAmbientLight(0.4);     
 
     player = new THREE.Mesh(
 		new RoundedBoxGeometry( 1.0, 2.0, 1.0, 10, 0.5 ),
@@ -80,11 +80,10 @@ function init(){
     //--where camera is--
     testCam = getSphere(0.3, 'red');
     followCam.getWorldPosition(testCam.position);
-    //scene.add(testCam);
 
     scene.add(map);
+    scene.add(ampLight);
     scene.add(light);
-    
     
     light.position.y = 40;
     player.scale.set(0.2, 0.2, 0.2);
@@ -197,7 +196,6 @@ function getSphere(r, color){
 
 function getMap(){
     var map = new THREE.Object3D();
-    map.name="map";
     
     var plane = getPlane(300);
     plane.name = 'ground';
@@ -217,30 +215,30 @@ function getMap(){
             gltf.scene.position.y = 0.1;
             gltf.scene.position.x = 25;
     
-            gltf.animations; // Array<THREE.AnimationClip>
-            gltf.scene; // THREE.Group
-            gltf.scenes; // Array<THREE.Group>
-            gltf.cameras; // Array<THREE.Camera>
-            gltf.asset; // Object     
-        }
-    );
-    
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {node.castShadow=true; node.receiveShadow=true;}
+            }) ;
+        }    
+    );    
     return map;
 }
 
 function update(renderer, scene, camera, controls, player){
     pyramid = scene.getObjectByName("Sketchfab_model");
     
+    //--ADD the body for model after they load
     var t= clock2.getElapsedTime();
     if (pyramid && t<1.03 && t>1){
         var result = threeToCannon(pyramid, {type: ShapeType.HULL});
+        pyramid.receiveShadow = true;
         const {shape, offset, orientation} = result;      
         pyramidBody.addShape(shape, offset, orientation);
         pyramidBody.position.x = 25;
         firstLoad=false;
     }
     updatePhysics();
-    cannonDebugger.update(); 
+    //uncomment to see hitbox
+    //cannonDebugger.update(); 
     renderer.render(
         scene,
         camera
