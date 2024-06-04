@@ -14,7 +14,7 @@ var scene, clock, world, timeStep=1/60, player, playerBody, controls, followCam,
 var renderer = new THREE.WebGLRenderer();
 renderer.shadowMap.enabled=true;
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor('rgb(120,120,120)');
+renderer.setClearColor('rgb(135,206,235)');
 document.getElementById('webgl').appendChild(renderer.domElement);
 
 //var controls = new OrbitControls(camera, renderer.domElement);
@@ -29,17 +29,17 @@ var rotateSpeed = Math.PI / 2 * 5;
 var startYPosition = 0.3;
 var playerPos = new THREE.Vector3(0, startYPosition, 0);
 var playerRot = new THREE.Vector3(0, 0, 0);
-var jumpVelocity =  6;
+var jumpVelocity =  8;
 
 var isOnGround = true;
 
 scene = new THREE.Scene();
 world = new CANNON.World();
-//var cannonDebugger = new CannonDebugger( scene, world );
+var cannonDebugger = new CannonDebugger( scene, world );
 
 //---here are model stuff for physic---
 var pyramid, pyramidBody = new CANNON.Body();
-var firstLoad=true;
+var loaded=false;
 var clock2=new THREE.Clock();
 
 
@@ -49,10 +49,11 @@ function init(){
     clock = new THREE.Clock();
 
     var light = getSpotLight(0.7);
+    var light2 =getDirectionalLight(0.7);
     var ampLight = getAmbientLight(0.4);     
 
     player = new THREE.Mesh(
-		new RoundedBoxGeometry( 1.0, 2.0, 1.0, 10, 0.5 ),
+		new RoundedBoxGeometry( 0.01, 0.01, 0.01, 0.01, 0.01 ),
 		[new THREE.MeshStandardMaterial({color: 'lightgrey'}),
         new THREE.MeshStandardMaterial({color: 'green'}),
         new THREE.MeshStandardMaterial({color: 'blue'}),
@@ -63,18 +64,16 @@ function init(){
 	);
     player.geometry.translate(0, -0.5, 0);
     player.capsuleInfo = {
-        radius: 0.5, 
+        radius: 0.01, 
         segment: new THREE.Line3(new THREE.Vector3(), new THREE.Vector3(0, 0.0, 0))
     };
     followCam = new THREE.Object3D;
     followCam.position.z = 22;
     followCam.position.y = 2;
 
-
     player.add(followCam);
  
     player.castShadow = true;
-    
     scene.add(player);
 
     //--where camera is--
@@ -83,7 +82,8 @@ function init(){
 
     scene.add(map);
     scene.add(ampLight);
-    scene.add(light);
+    //scene.add(light);
+    scene.add(light2);
     
     light.position.y = 40;
     player.scale.set(0.2, 0.2, 0.2);
@@ -118,7 +118,7 @@ function initCannon() {
     playerBody = new CANNON.Body({
         mass: 40, // kg
         position: new CANNON.Vec3(0, 0.1, 0),// m
-        shape: new CANNON.Box(new CANNON.Vec3(0.12, 0.2, 0.12))
+        shape: new CANNON.Box(new CANNON.Vec3(0.12, 0.35, 0.12))
     });
     playerBody.angularVelocity.set(0,0,0);
     playerBody.angularDamping = 1;
@@ -168,7 +168,6 @@ function getPlane(size){
 
 function getAmbientLight(intensity){
     var light = new THREE.AmbientLight('rbg(10,30,40)', intensity);
-
     return light;
 }
 
@@ -176,8 +175,17 @@ function getSpotLight(intensity){
     var light = new THREE.SpotLight(0xffffff, intensity);
     light.castShadow =true;
     light.shadow.bias = 0.001;
-    light.shadow.mapSize.width= 2048;
-    light.shadow.mapSize.height= 2048;
+    light.shadow.mapSize.width= 1024;
+    light.shadow.mapSize.height= 1024;
+    return light;
+}
+
+function getDirectionalLight(intensity){
+    var light = new THREE.DirectionalLight(0xffffff, intensity);
+    light.castShadow =true;
+    light.shadow.bias = 0.001;
+    light.shadow.mapSize.width= 1024;
+    light.shadow.mapSize.height= 1024;
     return light;
 }
 
@@ -196,6 +204,7 @@ function getSphere(r, color){
 
 function getMap(){
     var map = new THREE.Object3D();
+    map.name="map";
     
     var plane = getPlane(300);
     plane.name = 'ground';
@@ -216,29 +225,56 @@ function getMap(){
             gltf.scene.position.x = 25;
     
             gltf.scene.traverse(function(node){
-                if (node.isMesh) {node.castShadow=true; node.receiveShadow=true;}
+                if (node.isMesh) {node.name = "Pyramid";node.castShadow=true; node.receiveShadow=true;}
             }) ;
         }    
     );    
+    
+    loaderChar.load(
+        'source/Character2/scene.gltf',
+        function(gltf){
+            map.add(gltf.scene);
+            gltf.scene.name = "player";
+            gltf.scene.scale.set(0.05,0.05,0.05);
+            gltf.scene.position.y =1;
+            gltf.scene.visible = false;
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {node.name="player"; node.castShadow=true;}
+            });
+        }
+    )
     return map;
 }
 
 function update(renderer, scene, camera, controls, player){
-    pyramid = scene.getObjectByName("Sketchfab_model");
+    pyramid = scene.getObjectById(26);
+    var playerModel = scene.getObjectById(31);
     
     //--ADD the body for model after they load
     var t= clock2.getElapsedTime();
-    if (pyramid && t<1.03 && t>1){
+    //console.log(t);
+    if (!loaded && t>1.8){
+        
+        player.add(playerModel);
+        playerModel.visible = true;
+        playerModel.scale.set(0.2, 0.2, 0.2);
+        playerModel.position.y=1;
+        playerModel.rotation.x = Math.PI;
+        playerModel.position.z =-2;
+        playerModel.position.x = 0;
+        playerModel.rotation.z = Math.PI*9.5/10;
+        //player = playerModel;
+
         var result = threeToCannon(pyramid, {type: ShapeType.HULL});
-        pyramid.receiveShadow = true;
+
         const {shape, offset, orientation} = result;      
         pyramidBody.addShape(shape, offset, orientation);
         pyramidBody.position.x = 25;
-        firstLoad=false;
+        loaded=true;
     }
     updatePhysics();
     //uncomment to see hitbox
-    //cannonDebugger.update(); 
+    cannonDebugger.update(); 
     renderer.render(
         scene,
         camera
@@ -249,7 +285,7 @@ function update(renderer, scene, camera, controls, player){
         var midVec = new THREE.Vector3, followPos = new THREE.Vector3;
         midVec.copy(camera.position);            
         followCam.getWorldPosition(followPos);
-        midVec.lerp(followPos, 0.1);            
+        midVec.lerp(followPos, 0.075);            
         testCam.position.copy(midVec);
         camera.position.copy(midVec);
         camera.lookAt(player.position);      
