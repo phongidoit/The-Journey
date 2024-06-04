@@ -26,11 +26,8 @@ var moveSpeed = 6;
 var delta = 0;
 var rotateSpeed = Math.PI / 2 * 5;
 
-var startYPosition = 0.3;
-var playerPos = new THREE.Vector3(0, startYPosition, 0);
 var playerRot = new THREE.Vector3(0, 0, 0);
 var jumpVelocity =  8;
-
 var isOnGround = true;
 
 scene = new THREE.Scene();
@@ -42,6 +39,8 @@ var pyramid, pyramidBody = new CANNON.Body();
 var loaded=false;
 var clock2=new THREE.Clock();
 
+const elementNames = [];
+
 
 function init(){
     //------environment------
@@ -50,7 +49,7 @@ function init(){
 
     var light = getSpotLight(0.7);
     var light2 =getDirectionalLight(0.7);
-    var ampLight = getAmbientLight(0.4);     
+    var ampLight = getAmbientLight(0.3);     
 
     player = new THREE.Mesh(
 		new RoundedBoxGeometry( 0.01, 0.01, 0.01, 0.01, 0.01 ),
@@ -86,6 +85,7 @@ function init(){
     scene.add(light2);
     
     light.position.y = 40;
+    light2.position.y=40;
     player.scale.set(0.2, 0.2, 0.2);
     player.position.y=0;
     
@@ -183,7 +183,7 @@ function getSpotLight(intensity){
 function getDirectionalLight(intensity){
     var light = new THREE.DirectionalLight(0xffffff, intensity);
     light.castShadow =true;
-    light.shadow.bias = 0.001;
+
     light.shadow.mapSize.width= 1024;
     light.shadow.mapSize.height= 1024;
     return light;
@@ -225,7 +225,7 @@ function getMap(){
             gltf.scene.position.x = 25;
     
             gltf.scene.traverse(function(node){
-                if (node.isMesh) {node.name = "Pyramid";node.castShadow=true; node.receiveShadow=true;}
+                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; node.receiveShadow=true;}
             }) ;
         }    
     );    
@@ -239,7 +239,8 @@ function getMap(){
             gltf.scene.position.y =1;
             gltf.scene.visible = false;
             gltf.scene.traverse(function(node){
-                if (node.isMesh) {node.name="player"; node.castShadow=true;}
+                if (node.isMesh) { node.castShadow=true;}
+                if(node.name=="Sketchfab_model" && node.type=="Object3D") {node.name = 'player';}
             });
         }
     )
@@ -247,14 +248,14 @@ function getMap(){
 }
 
 function update(renderer, scene, camera, controls, player){
-    pyramid = scene.getObjectById(26);
-    var playerModel = scene.getObjectById(31);
+    //pyramid = scene.getObjectById(26);
+    pyramid = scene.getObjectByName(elementNames[0]);
+    var playerModel = scene.getObjectByName("player");
     
     //--ADD the body for model after they load
     var t= clock2.getElapsedTime();
     //console.log(t);
     if (!loaded && t>1.8){
-        
         player.add(playerModel);
         playerModel.visible = true;
         playerModel.scale.set(0.2, 0.2, 0.2);
@@ -263,10 +264,8 @@ function update(renderer, scene, camera, controls, player){
         playerModel.position.z =-2;
         playerModel.position.x = 0;
         playerModel.rotation.z = Math.PI*9.5/10;
-        //player = playerModel;
 
         var result = threeToCannon(pyramid, {type: ShapeType.HULL});
-
         const {shape, offset, orientation} = result;      
         pyramidBody.addShape(shape, offset, orientation);
         pyramidBody.position.x = 25;
@@ -294,8 +293,6 @@ function update(renderer, scene, camera, controls, player){
     
     //console.log("Ground", isOnGround);
     handleKeyboardInput(delta, camera, player);
-
-
 }
 
 function updatePhysics() {
