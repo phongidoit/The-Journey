@@ -8,14 +8,13 @@ import { threeToCannon, ShapeType } from 'three-to-cannon';
 
     //------player-------
 
-var gravity = -10;
-
 var scene, clock, world, timeStep=1/60, player, playerBody, controls, followCam, testCam;
 var renderer = new THREE.WebGLRenderer();
 renderer.shadowMap.enabled=true;
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor('rgb(120,120,120)');
 document.getElementById('webgl').appendChild(renderer.domElement);
+var light2 =getDirectionalLight(0.7);
 
 //var controls = new OrbitControls(camera, renderer.domElement);
 var camera = new THREE.PerspectiveCamera( 50, window.innerWidth/window.innerHeight, 0.1, 50);
@@ -48,8 +47,8 @@ function init(){
     var map = getMap();  //build terrain here
     clock = new THREE.Clock();
 
-    var light = getSpotLight(0.7);
-    var ampLight = getAmbientLight(0.4);     
+    var light = getSpotLight(0.7);  
+    var ampLight = getAmbientLight(0.3);     
 
     player = new THREE.Mesh(
 		new RoundedBoxGeometry( 1.0, 2.0, 1.0, 10, 0.5 ),
@@ -69,10 +68,7 @@ function init(){
     followCam = new THREE.Object3D;
     followCam.position.z = 22;
     followCam.position.y = 2;
-
-
     player.add(followCam);
- 
     player.castShadow = true;
     
     scene.add(player);
@@ -83,9 +79,15 @@ function init(){
 
     scene.add(map);
     scene.add(ampLight);
-    scene.add(light);
+    //scene.add(light);
+    scene.add(light2);
+    scene.add( light2.target );
+    //scene.add(new THREE.CameraHelper( light2.shadow.camera ));
     
     light.position.y = 40;
+    light2.position.y=40;
+
+
     player.scale.set(0.2, 0.2, 0.2);
     player.position.y=0;
     
@@ -167,8 +169,7 @@ function getPlane(size){
 }
 
 function getAmbientLight(intensity){
-    var light = new THREE.AmbientLight('rbg(10,30,40)', intensity);
-
+    var light = new THREE.AmbientLight('rgb(255,255,255)', intensity);
     return light;
 }
 
@@ -176,8 +177,22 @@ function getSpotLight(intensity){
     var light = new THREE.SpotLight(0xffffff, intensity);
     light.castShadow =true;
     light.shadow.bias = 0.001;
-    light.shadow.mapSize.width= 2048;
-    light.shadow.mapSize.height= 2048;
+    light.shadow.mapSize.width= 512;
+    light.shadow.mapSize.height= 512;
+    return light;
+}
+
+function getDirectionalLight(intensity){
+    var light = new THREE.DirectionalLight(0xffffff, intensity);
+    var size = 15;
+    light.castShadow =true;
+    light.shadow.camera.top = size;
+    light.shadow.camera.bottom = -size;
+    light.shadow.camera.left = -size;
+    light.shadow.camera.right = size;
+    //light.shadow.bias =0.0001;
+    light.shadow.mapSize.width= 1024;
+    light.shadow.mapSize.height= 1024;
     return light;
 }
 
@@ -216,19 +231,43 @@ function getMap(){
             gltf.scene.position.x = 25;
     
             gltf.scene.traverse(function(node){
-                if (node.isMesh) {node.castShadow=true; node.receiveShadow=true;}
+                if (node.isMesh) {
+                    console.log("here");
+                    elementNames.push(node.name); 
+                     node.castShadow=true;}
+                node.receiveShadow=true;     
             }) ;
         }    
     );    
     return map;
 }
 
+function updateLight(){
+    var playerPos = new THREE.Vector3;
+    player.getWorldPosition(playerPos);
+    light2.position.set(playerPos.x-50, light2.position.y, playerPos.z-40);
+    light2.target.position.copy(playerPos);
+}
+
 function update(renderer, scene, camera, controls, player){
-    pyramid = scene.getObjectByName("Sketchfab_model");
+    //pyramid = scene.getObjectById(26);
+    pyramid = scene.getObjectByName(elementNames[0]);
+    var playerModel = scene.getObjectByName("player");
+    updateLight()
     
     //--ADD the body for model after they load
     var t= clock2.getElapsedTime();
-    if (pyramid && t<1.03 && t>1){
+    //console.log(t);
+    if (!loaded && t>1.8&& playerModel){
+        player.add(playerModel);
+        playerModel.visible = true;
+        playerModel.scale.set(0.2, 0.2, 0.2);
+        playerModel.position.y=1;
+        playerModel.rotation.x = Math.PI;
+        playerModel.position.z =-2;
+        playerModel.position.x = 0;
+        playerModel.rotation.z = Math.PI*9.5/10;
+
         var result = threeToCannon(pyramid, {type: ShapeType.HULL});
         pyramid.receiveShadow = true;
         const {shape, offset, orientation} = result;      
