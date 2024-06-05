@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { RoundedBoxGeometry } from './source/RoundedBoxGeometry.js';
 import * as CANNON from 'cannon-es';
 import CannonDebugger from './node_modules/cannon-es-debugger/dist/cannon-es-debugger.js';
 import { threeToCannon, ShapeType } from 'three-to-cannon';
@@ -47,24 +46,11 @@ function init(){
     var map = getMap();  //build terrain here
     clock = new THREE.Clock();
 
-    var light = getSpotLight(0.7);
     var ampLight = getAmbientLight(0.3);     
 
-    player = new THREE.Mesh(
-		new RoundedBoxGeometry( 0.01, 0.01, 0.01, 0.01, 0.01 ),
-		[new THREE.MeshStandardMaterial({color: 'lightgrey'}),
-        new THREE.MeshStandardMaterial({color: 'green'}),
-        new THREE.MeshStandardMaterial({color: 'blue'}),
-        new THREE.MeshStandardMaterial({color: 'yellow'}),
-        new THREE.MeshStandardMaterial({color: 'pink'}),
-        new THREE.MeshStandardMaterial({color: 'red'})
-        ]
-	);
-    player.geometry.translate(0, -0.5, 0);
-    player.capsuleInfo = {
-        radius: 0.01, 
-        segment: new THREE.Line3(new THREE.Vector3(), new THREE.Vector3(0, 0.0, 0))
-    };
+    player = new THREE.Object3D;
+    //player.geometry.translate(0, -0.5, 0);
+
     followCam = new THREE.Object3D;
     followCam.position.z = 22;
     followCam.position.y = 2;
@@ -75,17 +61,17 @@ function init(){
     scene.add(player);
 
     //--where camera is--
-    testCam = getSphere(0.3, 'red');
+    testCam = new THREE.Object3D;
     followCam.getWorldPosition(testCam.position);
 
     scene.add(map);
     scene.add(ampLight);
-    //scene.add(light);
+
     scene.add(light2);
     scene.add(light2.target);
-    scene.add( new THREE.CameraHelper( light2.shadow.camera ) );
+    //scene.add( new THREE.CameraHelper( light2.shadow.camera ) );
     
-    light.position.y = 40;
+    //light.position.y = 40;
     light2.position.y=40;
     player.scale.set(0.2, 0.2, 0.2);
     player.position.y=0;
@@ -103,11 +89,8 @@ function init(){
     });
     document.addEventListener('keyup', function(event) {
         keyboard[event.key] = false;
-
     });
-    document.addEventListener('click', function(event) {
 
-    });
     return scene;
 }
 
@@ -156,7 +139,6 @@ function getPlane(size){
     material.map.wrapS = THREE.RepeatWrapping;
     material.map.wrapT = THREE.RepeatWrapping;
     material.map.repeat.set(30,30);
-
 
     var mesh = new THREE.Mesh(
         geometry,
@@ -263,6 +245,9 @@ function updateLight(){
     light2.target.position.copy(playerPos);
 }
 
+function loadModel(){
+
+}
 
 function update(renderer, scene, camera, controls, player){
     //pyramid = scene.getObjectById(26);
