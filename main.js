@@ -32,7 +32,16 @@ var isOnGround = true;
 
 scene = new THREE.Scene();
 world = new CANNON.World();
-var cannonDebugger = new CannonDebugger( scene, world );
+var cannonDebugger = new CannonDebugger( scene, world, {
+    onInit(body, mesh) {
+      // Toggle visibiliy on "k" press
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'k') {
+          mesh.visible = !mesh.visible
+        }
+      })
+    }
+});
 
 //---here are model stuff for physic---
 const slopeMat = new CANNON.Material('slope');
@@ -56,12 +65,24 @@ function init(){
     followCam.position.z = 22;
     followCam.position.y = 2;
 
+    const listener = new THREE.AudioListener();
+    camera.add( listener );
+    const sound = new THREE.Audio( listener );
+    const audioLoader = new THREE.AudioLoader();
+    audioLoader.load( 'source/audio/Journey Soundtrack (Austin Wintory) - 17. Apotheosis.mp3', function( buffer ) {
+        sound.setBuffer( buffer );
+        sound.setLoop( true );
+        sound.setVolume( 0.3 );
+        sound.play();
+        sound.resume();
+    });
+
     player.add(followCam);
  
     player.castShadow = true;
     scene.add(player);
 
-    //--where camera is--
+    //--where camera should be--
     testCam = new THREE.Object3D;
     followCam.getWorldPosition(testCam.position);
 
@@ -70,9 +91,7 @@ function init(){
 
     scene.add(light2);
     scene.add(light2.target);
-    //scene.add( new THREE.CameraHelper( light2.shadow.camera ) );
-    
-    //light.position.y = 40;
+
     light2.position.y=40;
     player.scale.set(0.2, 0.2, 0.2);
     player.position.y=0;
@@ -118,6 +137,7 @@ function initCannon() {
         mass: 0 // mass == 0 makes the body static
     });
 
+    //An object with hit box
     var pillarBody = new CANNON.Body({
         mass: 0,
         position: new CANNON.Vec3(5, 0.01, 0),// m
@@ -298,7 +318,6 @@ function update(renderer, scene, camera, controls, player){
         var result = threeToCannon(pyramid, {type: ShapeType.HULL});
         const {shape, offset, orientation} = result;      
         pyramidBody.addShape(shape, offset, orientation);
-        pyramidBody.material = slopeMat;
         pyramidBody.position.x = 25;
         loaded=true;
     }
@@ -378,9 +397,10 @@ function handleKeyboardInput(delta, camera, player) {
 
         playerBody.position.x = player.position.x;
         playerBody.position.z = player.position.z;
+        playerBody.quaternion.copy(player.quaternion);
+    }else if (keyboard['T']|| keyboard['t']) {
+        
     }  
-    playerBody.quaternion.copy(player.quaternion);
-    
 }
 
 
