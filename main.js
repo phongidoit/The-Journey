@@ -20,6 +20,7 @@ document.getElementById('webgl').appendChild(renderer.domElement);
 //var controls = new OrbitControls(camera, renderer.domElement);
 var camera = new THREE.PerspectiveCamera( 50, window.innerWidth/window.innerHeight, 0.1, 50);
 window.camera = camera;
+var light2 = getDirectionalLight();
 
 var keyboard = {};
 var moveSpeed = 6;
@@ -41,14 +42,12 @@ var clock2=new THREE.Clock();
 
 const elementNames = [];
 
-
 function init(){
     //------environment------
     var map = getMap();  //build terrain here
     clock = new THREE.Clock();
 
     var light = getSpotLight(0.7);
-    var light2 =getDirectionalLight(0.7);
     var ampLight = getAmbientLight(0.3);     
 
     player = new THREE.Mesh(
@@ -83,6 +82,8 @@ function init(){
     scene.add(ampLight);
     //scene.add(light);
     scene.add(light2);
+    scene.add(light2.target);
+    scene.add( new THREE.CameraHelper( light2.shadow.camera ) );
     
     light.position.y = 40;
     light2.position.y=40;
@@ -167,7 +168,7 @@ function getPlane(size){
 }
 
 function getAmbientLight(intensity){
-    var light = new THREE.AmbientLight('rbg(10,30,40)', intensity);
+    var light = new THREE.AmbientLight(0xffffff, intensity);
     return light;
 }
 
@@ -183,9 +184,14 @@ function getSpotLight(intensity){
 function getDirectionalLight(intensity){
     var light = new THREE.DirectionalLight(0xffffff, intensity);
     light.castShadow =true;
+    var size=15;
+    light.shadow.camera.left = -size;
+    light.shadow.camera.right = size;
+    light.shadow.camera.top = size;
+    light.shadow.camera.bottom = -size;
 
-    light.shadow.mapSize.width= 1024;
-    light.shadow.mapSize.height= 1024;
+    light.shadow.mapSize.width= 512;
+    light.shadow.mapSize.height= 512;
     return light;
 }
 
@@ -225,8 +231,10 @@ function getMap(){
             gltf.scene.position.x = 25;
     
             gltf.scene.traverse(function(node){
-                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; node.receiveShadow=true;}
+                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
+                node.receiveShadow=true;
             }) ;
+            
         }    
     );    
     
@@ -247,15 +255,24 @@ function getMap(){
     return map;
 }
 
+function updateLight(){
+    var playerPos=new THREE.Vector3;
+    player.getWorldPosition(playerPos);
+    
+    light2.position.set(playerPos.x-50, light2.position.y, playerPos.z-40);
+    light2.target.position.copy(playerPos);
+}
+
+
 function update(renderer, scene, camera, controls, player){
     //pyramid = scene.getObjectById(26);
     pyramid = scene.getObjectByName(elementNames[0]);
     var playerModel = scene.getObjectByName("player");
-    
+    updateLight();
     //--ADD the body for model after they load
     var t= clock2.getElapsedTime();
     //console.log(t);
-    if (!loaded && t>1.8){
+    if (!loaded && t>1.8 && playerModel){
         player.add(playerModel);
         playerModel.visible = true;
         playerModel.scale.set(0.2, 0.2, 0.2);
