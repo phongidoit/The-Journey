@@ -16,7 +16,6 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor('rgb(135,206,235)');
 document.getElementById('webgl').appendChild(renderer.domElement);
 
-//var controls = new OrbitControls(camera, renderer.domElement);
 var camera = new THREE.PerspectiveCamera( 50, window.innerWidth/window.innerHeight, 0.1, 50);
 window.camera = camera;
 var light2 = getDirectionalLight();
@@ -99,12 +98,12 @@ function init(){
     camera.position.x = 3; camera.position.y = 6; camera.position.z = 10;
     camera.lookAt(new THREE.Vector3(0, 0, 0));
     controls = new OrbitControls(camera, renderer.domElement);
+    controls.enabled = false;
     controls.maxPolarAngle = Math.PI*7.75/16;
 
     //controls.update();
     document.addEventListener('keydown', function(event) {
         keyboard[event.key] = true;
-        controls.enabled =false;
 
     });
     document.addEventListener('keyup', function(event) {
@@ -322,26 +321,29 @@ function update(renderer, scene, camera, controls, player){
         loaded=true;
     }
     updatePhysics();
-    //uncomment to see hitbox
-    cannonDebugger.update(); 
-    renderer.render(
-        scene,
-        camera
-    );
 
+    cannonDebugger.update(); 
+    renderer.render( scene, camera);
     requestAnimationFrame(function(){
         update(renderer, scene, camera, controls, player);
-        var midVec = new THREE.Vector3, followPos = new THREE.Vector3;
-        midVec.copy(camera.position);            
-        followCam.getWorldPosition(followPos);
-        midVec.lerp(followPos, 0.075);            
-        testCam.position.copy(midVec);
-        camera.position.copy(midVec);
-        camera.lookAt(player.position);      
+        if (!controls.enabled){
+            var midVec = new THREE.Vector3, followPos = new THREE.Vector3;
+            midVec.copy(camera.position);            
+            followCam.getWorldPosition(followPos);
+            midVec.lerp(followPos, 0.075);            
+            testCam.position.copy(midVec);
+            camera.position.copy(midVec);
+            //camera.lookAt(player.position); 
+            controls.target.copy(player.position);
+            controls.update();
+        }  
+        else{
+            controls.update();
+            controls.enableRotate = true;
+            controls.target.copy(playerBody.position);
+        }
     })
-    delta = clock.getDelta();
-    
-    //console.log("Ground", isOnGround);
+    delta = clock.getDelta();    
     handleKeyboardInput(delta, camera, player);
 }
 
@@ -399,8 +401,11 @@ function handleKeyboardInput(delta, camera, player) {
         playerBody.position.z = player.position.z;
         playerBody.quaternion.copy(player.quaternion);
     }else if (keyboard['T']|| keyboard['t']) {
-        
-    }  
+        controls.enabled = !controls.enabled; 
+        controls.enableRotate = !controls.enableRotate;
+        keyboard['t'] = false;
+    }
+    
 }
 
 
