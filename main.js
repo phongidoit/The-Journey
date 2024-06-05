@@ -35,6 +35,7 @@ world = new CANNON.World();
 var cannonDebugger = new CannonDebugger( scene, world );
 
 //---here are model stuff for physic---
+const slopeMat = new CANNON.Material('slope');
 var pyramid, pyramidBody = new CANNON.Body();
 var loaded=false;
 var clock2=new THREE.Clock();
@@ -98,11 +99,13 @@ function initCannon() {
     world.gravity.set(0,-10,0);
     world.broadphase = new CANNON.NaiveBroadphase();
     world.solver.iterations = 10;
+    const bodyMat = new CANNON.Material('bodymat');
 
     playerBody = new CANNON.Body({
         mass: 40, // kg
         position: new CANNON.Vec3(0, 0.1, 0),// m
-        shape: new CANNON.Box(new CANNON.Vec3(0.12, 0.35, 0.12))
+        shape: new CANNON.Box(new CANNON.Vec3(0.12, 0.35, 0.12)),
+        material: bodyMat
     });
     playerBody.angularVelocity.set(0,0,0);
     playerBody.angularDamping = 1;
@@ -114,16 +117,23 @@ function initCannon() {
     var groundBody = new CANNON.Body({
         mass: 0 // mass == 0 makes the body static
     });
+
+    var pillarBody = new CANNON.Body({
+        mass: 0,
+        position: new CANNON.Vec3(5, 0.01, 0),// m
+        shape: new CANNON.Box(new CANNON.Vec3(0.35, 2.5, 0.3)),
+    });
     var groundShape = new CANNON.Plane();
     groundBody.addShape(groundShape);
     groundBody.quaternion.setFromEuler(-Math.PI/2, 0, 0);
 
+    world.addBody(pillarBody);
     world.addBody(pyramidBody);
     world.addBody(groundBody);
 }
 
 function getPlane(size){
-    var geometry = new THREE.PlaneGeometry(size, size, 100, 100);
+    var geometry = new THREE.PlaneGeometry(size, size, 80, 80);
 
     var textureLoader = new THREE.TextureLoader();
     var terrainLoader = new THREE.TextureLoader().load('./source/HeightMap1.png');
@@ -135,10 +145,10 @@ function getPlane(size){
         side: THREE.DoubleSide,
 
     });
-    material.map = textureLoader.load('./source/sand_texture.jpg');
+    material.map = textureLoader.load('./source/sand4.jpg');
     material.map.wrapS = THREE.RepeatWrapping;
     material.map.wrapT = THREE.RepeatWrapping;
-    material.map.repeat.set(30,30);
+    material.map.repeat.set(15,15);
 
     var mesh = new THREE.Mesh(
         geometry,
@@ -200,8 +210,10 @@ function getMap(){
 
     const loaderChar = new GLTFLoader();
     const loaderPyra = new GLTFLoader();
+    const loadPillar = new GLTFLoader();
     map.add(plane);
 
+    //Load gltf 3d file
     loaderPyra.load(
         // resource URL
         'source/Pyramid/scene.gltf',
@@ -213,12 +225,29 @@ function getMap(){
             gltf.scene.position.x = 25;
     
             gltf.scene.traverse(function(node){
-                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
+                if (node.isMesh) {elementNames.push(node.name); node.castShadow=true; }
+                node.receiveShadow=true;
+            }) ;
+        }    
+    );   
+    
+    loadPillar.load(
+        // resource URL
+        'source/Pillar/scene.gltf',
+        // called when the resource is loaded
+        function ( gltf ) { 
+            map.add( gltf.scene );
+            gltf.scene.scale.set(0.4, 0.4, 0.4);
+            gltf.scene.position.y = -0.05;
+            gltf.scene.position.x = 5;
+    
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {console.log('here');elementNames.push(node.name);node.castShadow=true; }
                 node.receiveShadow=true;
             }) ;
             
         }    
-    );    
+    ); 
     
     loaderChar.load(
         'source/Character2/scene.gltf',
@@ -250,7 +279,6 @@ function loadModel(){
 }
 
 function update(renderer, scene, camera, controls, player){
-    //pyramid = scene.getObjectById(26);
     pyramid = scene.getObjectByName(elementNames[0]);
     var playerModel = scene.getObjectByName("player");
     updateLight();
@@ -270,6 +298,7 @@ function update(renderer, scene, camera, controls, player){
         var result = threeToCannon(pyramid, {type: ShapeType.HULL});
         const {shape, offset, orientation} = result;      
         pyramidBody.addShape(shape, offset, orientation);
+        pyramidBody.material = slopeMat;
         pyramidBody.position.x = 25;
         loaded=true;
     }
