@@ -204,7 +204,7 @@ function getMap(){
 
     loaderPyra.load(
         // resource URL
-        'source/Pyramid/scene.gltf',
+        'source/pyramid2/scene.gltf',
         // called when the resource is loaded
         function ( gltf ) { 
             map.add( gltf.scene );
