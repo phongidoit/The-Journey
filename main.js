@@ -200,11 +200,13 @@ function getMap(){
 
     const loaderChar = new GLTFLoader();
     const loaderPyra = new GLTFLoader();
+    const tomb = new GLTFLoader();
+
     map.add(plane);
 
     loaderPyra.load(
         // resource URL
-        'source/pyramid2/scene.gltf',
+        'source/Pyramid/scene.gltf',
         // called when the resource is loaded
         function ( gltf ) { 
             map.add( gltf.scene );
@@ -219,6 +221,24 @@ function getMap(){
             
         }    
     );    
+
+    tomb.load(
+        // resource URL
+        'source/tomb/railing_pillar_from_the_amaravati_stupa/scene.gltf',
+        // called when the resource is loaded
+        function ( gltf ) { 
+            map.add( gltf.scene );
+            gltf.scene.scale.set(0.8, 0.8, 0.8);
+            gltf.scene.position.y = 0.1;
+            gltf.scene.position.x = -20;
+    
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
+                node.receiveShadow=true;
+            }) ;
+            
+        }    
+    ); 
     
     loaderChar.load(
         'source/Character2/scene.gltf',
@@ -257,7 +277,7 @@ function update(renderer, scene, camera, controls, player){
     //--ADD the body for model after they load
     var t= clock2.getElapsedTime();
     //console.log(t);
-    if (!loaded && t>1.8 && playerModel){
+    if (!loaded && t>1.8 && playerModel && pyramid){
         player.add(playerModel);
         playerModel.visible = true;
         playerModel.scale.set(0.2, 0.2, 0.2);
