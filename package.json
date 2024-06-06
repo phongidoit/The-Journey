@@ -3,6 +3,7 @@
     "cannon": "^0.6.2",
     "cannon-es": "^0.20.0",
     "cannon-es-debugger": "^1.0.0",
+    "three-nebula": "^10.0.3",
     "three-to-cannon": "^5.0.1"
   }
 }

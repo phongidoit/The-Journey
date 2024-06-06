@@ -4,6 +4,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as CANNON from 'cannon-es';
 import CannonDebugger from './node_modules/cannon-es-debugger/dist/cannon-es-debugger.js';
 import { threeToCannon, ShapeType } from 'three-to-cannon';
+//import json from "./source/sand_part.json"
+//import System, {Emitter, Rate, Span, Position, Mass, Radius, Life, Velocity, PointZone, Vector3D, Scale}  from 'three-nebula';
+
 
     //------player-------
 
@@ -43,12 +46,18 @@ var cannonDebugger = new CannonDebugger( scene, world, {
 });
 
 //---here are model stuff for physic---
-const slopeMat = new CANNON.Material('slope');
 var pyramid, pyramidBody = new CANNON.Body();
 var loaded=false;
 var clock2=new THREE.Clock();
 
 const elementNames = [];
+
+//--particle--
+// const { System: Nebula, SpriteRenderer } = window.Nebula;
+// const system = new System();
+// new System.fromJSONAsync(json, THREE).then(system => {
+//     console.log(system);
+//   });
 
 function init(){
     //------environment------
@@ -353,7 +362,7 @@ function updatePhysics() {
 
     // Copy coordinates from Cannon.js to Three.js
     player.position.copy(playerBody.position);
-    player.position.y += 0.12;
+    player.position.y += 0.1;
     player.quaternion.copy(playerBody.quaternion);
 }
 
