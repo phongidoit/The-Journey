@@ -66,6 +66,7 @@ function init(){
     followCam.position.z = 22;
     followCam.position.y = 2;
 
+    //--Add Audio-- 
     const listener = new THREE.AudioListener();
     camera.add( listener );
     const sound = new THREE.Audio( listener );
@@ -128,33 +129,40 @@ function initCannon() {
     playerBody = new CANNON.Body({
         mass: 40, // kg
         position: new CANNON.Vec3(0, 0.1, 0),// m
+        angularDamping: 1,
+        angularVelocity: new CANNON.Vec3(0,0,0),
         shape: new CANNON.Box(new CANNON.Vec3(0.12, 0.35, 0.12)),
         material: bodyMat
     });
-    playerBody.angularVelocity.set(0,0,0);
-    playerBody.angularDamping = 1;
-    
     playerBody.addEventListener("collide",function(e){isOnGround=true;})
-    world.addBody(playerBody);
+    //world.addBody(playerBody);
 
     // Create a plane
     var groundBody = new CANNON.Body({
         mass: 0 // mass == 0 makes the body static
     });
 
-    //An object with hit box
-    var pillarBody = new CANNON.Body({
-        mass: 0,
-        position: new CANNON.Vec3(5, 0.01, 0),// m
-        shape: new CANNON.Box(new CANNON.Vec3(0.35, 2.5, 0.3)),
-    });
-    var groundShape = new CANNON.Plane();
-    groundBody.addShape(groundShape);
+    //Use this function to add Hitbox
+    function staticBody(pos, size){
+        var temp = new CANNON.Body({
+            mass: 0,
+            position: new CANNON.Vec3(pos[0], pos[1], pos[2]),
+            shape: new CANNON.Box(new CANNON.Vec3(size[0], size[1], size[2]))
+        })
+        return temp;
+
+    }
+
+    //Set hitbox for map elements
+    var pillarBody = staticBody([5, 0.01, 0], [0.35, 2.5, 0.3]);
+    var tombBody = staticBody([-10.25, 0.01, 0.52], [0.2, 1, 0.2]);
+
+    groundBody.addShape(new CANNON.Plane());
     groundBody.quaternion.setFromEuler(-Math.PI/2, 0, 0);
 
-    world.addBody(pillarBody);
-    world.addBody(pyramidBody);
-    world.addBody(groundBody);
+    //add element to Physic world
+    const listBody = [groundBody, playerBody, tombBody, pillarBody, pyramidBody];
+    for (var index=0; index< listBody.length; index++){world.addBody(listBody[index]);}
 }
 
 function getPlane(size){
@@ -221,7 +229,6 @@ function getMap(){
     map.name="map";
     
     var plane = getPlane(300);
-    plane.name = 'ground';
     plane.rotation.x = -Math.PI/2;
 
     const loaderChar = new GLTFLoader();
@@ -252,7 +259,7 @@ function getMap(){
     loadPillar.load(
         // resource URL
         'source/Pillar/scene.gltf',
-        // called when the resource is loaded
+
         function ( gltf ) { 
             map.add( gltf.scene );
             gltf.scene.scale.set(0.4, 0.4, 0.4);
@@ -270,12 +277,12 @@ function getMap(){
     tomb.load(
         // resource URL
         'source/tomb/railing_pillar_from_the_amaravati_stupa/scene.gltf',
-        // called when the resource is loaded
+
         function ( gltf ) { 
             map.add( gltf.scene );
             gltf.scene.scale.set(0.8, 0.8, 0.8);
             gltf.scene.position.y = 0.1;
-            gltf.scene.position.x = -20;
+            gltf.scene.position.x = -10;
     
             gltf.scene.traverse(function(node){
                 if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
@@ -305,13 +312,15 @@ function getMap(){
 function updateLight(){
     var playerPos=new THREE.Vector3;
     player.getWorldPosition(playerPos);
-    
     light2.position.set(playerPos.x-50, light2.position.y, playerPos.z-40);
     light2.target.position.copy(playerPos);
 }
 
-function loadModel(){
-
+function CustomCollisionBox(model, modelBody){
+    //Remember to add modelBody into world first
+    var result = threeToCannon(model, {type: ShapeType.HULL});
+    const {shape, offset, orientation} = result; 
+    modelBody.addShape(shape, offset, orientation);
 }
 
 function update(renderer, scene, camera, controls, player){
@@ -320,20 +329,18 @@ function update(renderer, scene, camera, controls, player){
     updateLight();
     //--ADD the body for model after they load
     var t= clock2.getElapsedTime();
-    //console.log(t);
+
     if (!loaded && t>1.8 && playerModel && pyramid){
         player.add(playerModel);
         playerModel.visible = true;
         playerModel.scale.set(0.2, 0.2, 0.2);
-        playerModel.position.y=1;
-        playerModel.rotation.x = Math.PI;
-        playerModel.position.z =-2;
-        playerModel.position.x = 0;
-        playerModel.rotation.z = Math.PI*9.5/10;
+        playerModel.position.copy(new THREE.Vector3(0,1, -2));
+        playerModel.rotation.set(Math.PI, 0, Math.PI*9.5/10);
 
-        var result = threeToCannon(pyramid, {type: ShapeType.HULL});
-        const {shape, offset, orientation} = result;      
-        pyramidBody.addShape(shape, offset, orientation);
+        // var result = threeToCannon(pyramid, {type: ShapeType.HULL});
+        // const {shape, offset, orientation} = result;      
+        // pyramidBody.addShape(shape, offset, orientation);
+        CustomCollisionBox(pyramid, pyramidBody);
         pyramidBody.position.x = 25;
         loaded=true;
     }
@@ -361,8 +368,7 @@ function update(renderer, scene, camera, controls, player){
             followCam.getWorldPosition(followPos);
             midVec.lerp(followPos, 0.075);            
             testCam.position.copy(midVec);
-            camera.position.copy(midVec);
-            //camera.lookAt(player.position); 
+            camera.position.copy(midVec); 
             controls.target.copy(player.position);
             controls.update();
         }  
@@ -397,7 +403,6 @@ function AnyInput(keyboard){
 }
 
 function handleKeyboardInput(delta, camera, player) {
-
     if (keyboard[" "]){
         if (isOnGround){
             playerBody.velocity.y = jumpVelocity;
@@ -424,10 +429,7 @@ function handleKeyboardInput(delta, camera, player) {
         if (keyboard['D']|| keyboard['d']) {
             playerRot.y -= rotateSpeed * delta;
         }        
-       player.rotation.setFromVector3(playerRot);
-
-        playerBody.position.x = player.position.x;
-        playerBody.position.z = player.position.z;
+        player.rotation.setFromVector3(playerRot);
         playerBody.quaternion.copy(player.quaternion);
     }else if (keyboard['T']|| keyboard['t']) {
         controls.enabled = !controls.enabled; 
@@ -438,7 +440,6 @@ function handleKeyboardInput(delta, camera, player) {
 }
 
 var scene = init();
-console.log("Physic engine loaded")
 initCannon();
 update(renderer, scene, camera, controls, player);
 

@@ -21,11 +21,10 @@ export default class SandKickoff{
       var container = new THREE.Object3D();
       container.name = "sandParts"
     
-      const sandGeometry = new THREE.SphereGeometry(1);
+      const sandGeometry = new THREE.SphereGeometry(0.6);
       while (this.numpar--){
           this.sandParticles[this.numpar] = new THREE.Mesh(sandGeometry, sandMat);
           this.sandParticles[this.numpar].position.set(Math.random() * 3 -1.5, Math.random() * 0.4-1.5, Math.random() * 2 - 1);
-          //console.log(sandParticles);
           container.add(this.sandParticles[this.numpar]);
       }  
       object.add(container); 
