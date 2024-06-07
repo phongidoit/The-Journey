@@ -4,9 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as CANNON from 'cannon-es';
 import CannonDebugger from './node_modules/cannon-es-debugger/dist/cannon-es-debugger.js';
 import { threeToCannon, ShapeType } from 'three-to-cannon';
-//import json from "./source/sand_part.json"
-//import System, {Emitter, Rate, Span, Position, Mass, Radius, Life, Velocity, PointZone, Vector3D, Scale}  from 'three-nebula';
-
+import SandKickoff from "./test.js";
 
     //------player-------
 
@@ -50,12 +48,8 @@ var clock2=new THREE.Clock();
 
 const elementNames = [];
 
-//--particle--
-// const { System: Nebula, SpriteRenderer } = window.Nebula;
-// const system = new System();
-// new System.fromJSONAsync(json, THREE).then(system => {
-//     console.log(system);
-//   });
+//--Particle--
+var sandEffect;
 
 function init(){
     //------environment------
@@ -65,7 +59,7 @@ function init(){
     var ampLight = getAmbientLight(0.3);     
 
     player = new THREE.Object3D;
-    //player.geometry.translate(0, -0.5, 0);
+    sandEffect = new SandKickoff();
 
     followCam = new THREE.Object3D;
     followCam.position.z = 22;
@@ -94,9 +88,9 @@ function init(){
 
     scene.add(map);
     scene.add(ampLight);
-
     scene.add(light2);
     scene.add(light2.target);
+    sandEffect.createParticle(player);
 
     light2.position.y=40;
     player.scale.set(0.2, 0.2, 0.2);
@@ -329,6 +323,18 @@ function update(renderer, scene, camera, controls, player){
     }
     updatePhysics();
 
+    var container = scene.getObjectByName('sandParts');
+    if (container && isOnGround && playerModel){
+        container.visible = true;
+        container.position.copy(playerModel.position);
+        container.position.z += 3;
+        container.position.y -= 0.5;
+        sandEffect.animate(container);
+    }
+    else if(container && !isOnGround){
+        container.visible = false;
+    }
+
     cannonDebugger.update(); 
     renderer.render( scene, camera);
     requestAnimationFrame(function(){
@@ -415,13 +421,6 @@ function handleKeyboardInput(delta, camera, player) {
     
 }
 
-function getSand(){
-    const meshGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-    const meshMat = new THREE.MeshLambertMaterial({color: 0xC2B280, wireframe:false });
-    var sand = new THREE.Mesh(meshGeo, meshMat);
-
-
-}
 
 
 var scene = init();

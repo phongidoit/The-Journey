@@ -1,23 +1,18 @@
 import * as THREE from "three";
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import * as CANNON from 'cannon-es';
-import CannonDebugger from './node_modules/cannon-es-debugger/dist/cannon-es-debugger.js';
-import { threeToCannon, ShapeType } from 'three-to-cannon';
 
-class SandKickoff{
+export default class SandKickoff{
   constructor(){
     this.clock = new THREE.Clock();
-    this.numpar =200;
+    this.numpar =50;
     this.temp=[];
   }
 
-  createParticle(scene){
+  createParticle(object){
     const textureLoader = new THREE.TextureLoader();
     var sandParticles = this.sandParticles = [];
     //this.clock = new THREE.Clock();
 
-    textureLoader.load("./source/clouds.png", texture => {
+    textureLoader.load("./source/sand_dust.png", texture => {
       const sandMat = new THREE.MeshBasicMaterial({
         color: 0xC2B280,
         map: texture,
@@ -26,16 +21,15 @@ class SandKickoff{
       var container = new THREE.Object3D();
       container.name = "sandParts"
     
-      const sandGeometry = new THREE.BoxGeometry(2, 0.5, 0.5);
+      const sandGeometry = new THREE.SphereGeometry(1);
       while (this.numpar--){
           this.sandParticles[this.numpar] = new THREE.Mesh(sandGeometry, sandMat);
-          this.sandParticles[this.numpar].position.set(Math.random() * 1.5 - 3, Math.random() * 1.5 - 3, Math.random() * 1.5 - 3);
+          this.sandParticles[this.numpar].position.set(Math.random() * 3 -1.5, Math.random() * 0.4-1.5, Math.random() * 2 - 1);
           //console.log(sandParticles);
           container.add(this.sandParticles[this.numpar]);
       }  
-      scene.add(container); 
+      object.add(container); 
     });
-    console.log(scene);
   }
 
   animate(container){
@@ -44,9 +38,9 @@ class SandKickoff{
       if (node.isMesh){
         var newPos = new THREE.Vector3;
         newPos.copy(node.position)
-        newPos.x += Math.random()  * 0.2 - 0.1;
-        newPos.y = Math.sin(Math.random() * Math.PI) * 0.5 - 1;
-        newPos.z = Math.sin(Math.random() * Math.PI) * 0.5 - 1;
+        newPos.x += Math.random() * 0.1 -0.05 ;
+        newPos.y = Math.random() * 0.1-2 ;
+        newPos.z = newPos.z + (Math.random()  * 0.1 - 0.05) ;
   
         node.position.copy(newPos);
       }
@@ -145,5 +139,4 @@ function update(renderer, scene, camera){
 }
 
 
-
-init();
+//init();
