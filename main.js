@@ -4,10 +4,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as CANNON from 'cannon-es';
 import CannonDebugger from './node_modules/cannon-es-debugger/dist/cannon-es-debugger.js';
 import { threeToCannon, ShapeType } from 'three-to-cannon';
+import SandKickoff from "./test.js";
 
     //------player-------
-
-var gravity = -10;
 
 var scene, clock, world, timeStep=1/60, player, playerBody, controls, followCam, testCam;
 var renderer = new THREE.WebGLRenderer();
@@ -16,7 +15,6 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor('rgb(135,206,235)');
 document.getElementById('webgl').appendChild(renderer.domElement);
 
-//var controls = new OrbitControls(camera, renderer.domElement);
 var camera = new THREE.PerspectiveCamera( 50, window.innerWidth/window.innerHeight, 0.1, 50);
 window.camera = camera;
 var light2 = getDirectionalLight();
@@ -32,7 +30,16 @@ var isOnGround = true;
 
 scene = new THREE.Scene();
 world = new CANNON.World();
-var cannonDebugger = new CannonDebugger( scene, world );
+var cannonDebugger = new CannonDebugger( scene, world, {
+    onInit(body, mesh) {
+      // Toggle visibiliy on "k" press
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'k') {
+          mesh.visible = !mesh.visible
+        }
+      })
+    }
+});
 
 //---here are model stuff for physic---
 var pyramid, pyramidBody = new CANNON.Body();
@@ -40,6 +47,9 @@ var loaded=false;
 var clock2=new THREE.Clock();
 
 const elementNames = [];
+
+//--Particle--
+var sandEffect;
 
 function init(){
     //------environment------
@@ -49,42 +59,58 @@ function init(){
     var ampLight = getAmbientLight(0.3);     
 
     player = new THREE.Object3D;
-    //player.geometry.translate(0, -0.5, 0);
+    sandEffect = new SandKickoff();
+    
 
     followCam = new THREE.Object3D;
     followCam.position.z = 22;
     followCam.position.y = 2;
+
+    //--Add Audio-- 
+    const listener = new THREE.AudioListener();
+    camera.add( listener );
+    const sound = new THREE.Audio( listener );
+    const audioLoader = new THREE.AudioLoader();
+    audioLoader.load( 'source/audio/Journey Soundtrack (Austin Wintory) - 17. Apotheosis.mp3', function( buffer ) {
+        sound.setBuffer( buffer );
+        sound.setLoop( true );
+        sound.setVolume( 0.3 );
+        sound.play();
+        sound.resume();
+    });
 
     player.add(followCam);
  
     player.castShadow = true;
     scene.add(player);
 
-    //--where camera is--
+    //--where camera should be--
     testCam = new THREE.Object3D;
     followCam.getWorldPosition(testCam.position);
 
     scene.add(map);
     scene.add(ampLight);
-
     scene.add(light2);
     scene.add(light2.target);
-    //scene.add( new THREE.CameraHelper( light2.shadow.camera ) );
-    
-    //light.position.y = 40;
+    sandEffect.createParticle(player);
+
     light2.position.y=40;
+    var sun = getSphere(2, 'white');
+    sun.position.copy(light2.position);
+    scene.add(sun);
+
     player.scale.set(0.2, 0.2, 0.2);
     player.position.y=0;
     
     camera.position.x = 3; camera.position.y = 6; camera.position.z = 10;
     camera.lookAt(new THREE.Vector3(0, 0, 0));
     controls = new OrbitControls(camera, renderer.domElement);
+    controls.enabled = false;
     controls.maxPolarAngle = Math.PI*7.75/16;
 
     //controls.update();
     document.addEventListener('keydown', function(event) {
         keyboard[event.key] = true;
-        controls.enabled =false;
 
     });
     document.addEventListener('keyup', function(event) {
@@ -98,32 +124,49 @@ function initCannon() {
     world.gravity.set(0,-10,0);
     world.broadphase = new CANNON.NaiveBroadphase();
     world.solver.iterations = 10;
+    const bodyMat = new CANNON.Material('bodymat');
 
     playerBody = new CANNON.Body({
         mass: 40, // kg
         position: new CANNON.Vec3(0, 0.1, 0),// m
-        shape: new CANNON.Box(new CANNON.Vec3(0.12, 0.35, 0.12))
+        angularDamping: 1,
+        angularVelocity: new CANNON.Vec3(0,0,0),
+        shape: new CANNON.Box(new CANNON.Vec3(0.12, 0.35, 0.12)),
+        material: bodyMat
     });
-    playerBody.angularVelocity.set(0,0,0);
-    playerBody.angularDamping = 1;
-    
     playerBody.addEventListener("collide",function(e){isOnGround=true;})
-    world.addBody(playerBody);
+    //world.addBody(playerBody);
 
     // Create a plane
     var groundBody = new CANNON.Body({
         mass: 0 // mass == 0 makes the body static
     });
-    var groundShape = new CANNON.Plane();
-    groundBody.addShape(groundShape);
+
+    //Use this function to add Hitbox
+    function staticBody(pos, size){
+        var temp = new CANNON.Body({
+            mass: 0,
+            position: new CANNON.Vec3(pos[0], pos[1], pos[2]),
+            shape: new CANNON.Box(new CANNON.Vec3(size[0], size[1], size[2]))
+        })
+        return temp;
+
+    }
+
+    //Set hitbox for map elements
+    var pillarBody = staticBody([5, 0.01, 0], [0.35, 2.5, 0.3]);
+    var tombBody = staticBody([-10.25, 0.01, 0.52], [0.2, 1, 0.2]);
+
+    groundBody.addShape(new CANNON.Plane());
     groundBody.quaternion.setFromEuler(-Math.PI/2, 0, 0);
 
-    world.addBody(pyramidBody);
-    world.addBody(groundBody);
+    //add element to Physic world
+    const listBody = [groundBody, playerBody, tombBody, pillarBody, pyramidBody];
+    for (var index=0; index< listBody.length; index++){world.addBody(listBody[index]);}
 }
 
 function getPlane(size){
-    var geometry = new THREE.PlaneGeometry(size, size, 100, 100);
+    var geometry = new THREE.PlaneGeometry(size, size, 80, 80);
 
     var textureLoader = new THREE.TextureLoader();
     var terrainLoader = new THREE.TextureLoader().load('./source/HeightMap1.png');
@@ -135,10 +178,10 @@ function getPlane(size){
         side: THREE.DoubleSide,
 
     });
-    material.map = textureLoader.load('./source/sand_texture.jpg');
+    material.map = textureLoader.load('./source/sand4.jpg');
     material.map.wrapS = THREE.RepeatWrapping;
     material.map.wrapT = THREE.RepeatWrapping;
-    material.map.repeat.set(30,30);
+    material.map.repeat.set(15,15);
 
     var mesh = new THREE.Mesh(
         geometry,
@@ -151,15 +194,6 @@ function getPlane(size){
 
 function getAmbientLight(intensity){
     var light = new THREE.AmbientLight(0xffffff, intensity);
-    return light;
-}
-
-function getSpotLight(intensity){
-    var light = new THREE.SpotLight(0xffffff, intensity);
-    light.castShadow =true;
-    light.shadow.bias = 0.001;
-    light.shadow.mapSize.width= 1024;
-    light.shadow.mapSize.height= 1024;
     return light;
 }
 
@@ -195,15 +229,16 @@ function getMap(){
     map.name="map";
     
     var plane = getPlane(300);
-    plane.name = 'ground';
     plane.rotation.x = -Math.PI/2;
 
     const loaderChar = new GLTFLoader();
     const loaderPyra = new GLTFLoader();
+    const loadPillar = new GLTFLoader();
     const tomb = new GLTFLoader();
 
     map.add(plane);
 
+    //Load gltf 3d file
     loaderPyra.load(
         // resource URL
         'source/Pyramid/scene.gltf',
@@ -215,7 +250,24 @@ function getMap(){
             gltf.scene.position.x = 25;
     
             gltf.scene.traverse(function(node){
-                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
+                if (node.isMesh) {elementNames.push(node.name); node.castShadow=true; }
+                node.receiveShadow=true;
+            }) ;
+        }    
+    );   
+    
+    loadPillar.load(
+        // resource URL
+        'source/Pillar/scene.gltf',
+
+        function ( gltf ) { 
+            map.add( gltf.scene );
+            gltf.scene.scale.set(0.4, 0.4, 0.4);
+            gltf.scene.position.y = -0.05;
+            gltf.scene.position.x = 5;
+    
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {console.log('here');elementNames.push(node.name);node.castShadow=true; }
                 node.receiveShadow=true;
             }) ;
             
@@ -225,12 +277,12 @@ function getMap(){
     tomb.load(
         // resource URL
         'source/tomb/railing_pillar_from_the_amaravati_stupa/scene.gltf',
-        // called when the resource is loaded
+
         function ( gltf ) { 
             map.add( gltf.scene );
             gltf.scene.scale.set(0.8, 0.8, 0.8);
             gltf.scene.position.y = 0.1;
-            gltf.scene.position.x = -20;
+            gltf.scene.position.x = -10;
     
             gltf.scene.traverse(function(node){
                 if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
@@ -260,60 +312,73 @@ function getMap(){
 function updateLight(){
     var playerPos=new THREE.Vector3;
     player.getWorldPosition(playerPos);
-    
     light2.position.set(playerPos.x-50, light2.position.y, playerPos.z-40);
     light2.target.position.copy(playerPos);
 }
 
-function loadModel(){
-
+function CustomCollisionBox(model, modelBody){
+    //Remember to add modelBody into world first
+    var result = threeToCannon(model, {type: ShapeType.HULL});
+    const {shape, offset, orientation} = result; 
+    modelBody.addShape(shape, offset, orientation);
 }
 
 function update(renderer, scene, camera, controls, player){
-    //pyramid = scene.getObjectById(26);
     pyramid = scene.getObjectByName(elementNames[0]);
     var playerModel = scene.getObjectByName("player");
     updateLight();
     //--ADD the body for model after they load
     var t= clock2.getElapsedTime();
-    //console.log(t);
+
     if (!loaded && t>1.8 && playerModel && pyramid){
         player.add(playerModel);
         playerModel.visible = true;
         playerModel.scale.set(0.2, 0.2, 0.2);
-        playerModel.position.y=1;
-        playerModel.rotation.x = Math.PI;
-        playerModel.position.z =-2;
-        playerModel.position.x = 0;
-        playerModel.rotation.z = Math.PI*9.5/10;
+        playerModel.position.copy(new THREE.Vector3(0,1, -2));
+        playerModel.rotation.set(Math.PI, 0, Math.PI*9.5/10);
 
-        var result = threeToCannon(pyramid, {type: ShapeType.HULL});
-        const {shape, offset, orientation} = result;      
-        pyramidBody.addShape(shape, offset, orientation);
+        // var result = threeToCannon(pyramid, {type: ShapeType.HULL});
+        // const {shape, offset, orientation} = result;      
+        // pyramidBody.addShape(shape, offset, orientation);
+        CustomCollisionBox(pyramid, pyramidBody);
         pyramidBody.position.x = 25;
         loaded=true;
     }
     updatePhysics();
-    //uncomment to see hitbox
-    cannonDebugger.update(); 
-    renderer.render(
-        scene,
-        camera
-    );
 
+    var container = scene.getObjectByName('sandParts');
+    if (container && isOnGround && playerModel){
+        container.visible = true;
+        container.position.copy(playerModel.position);
+        container.position.z += 3;
+        container.position.y -= 0.5;
+        sandEffect.animate(container);
+    }
+    else if(container && !isOnGround){
+        container.visible = false;
+    }
+
+    cannonDebugger.update(); 
+    renderer.render( scene, camera);
     requestAnimationFrame(function(){
         update(renderer, scene, camera, controls, player);
-        var midVec = new THREE.Vector3, followPos = new THREE.Vector3;
-        midVec.copy(camera.position);            
-        followCam.getWorldPosition(followPos);
-        midVec.lerp(followPos, 0.075);            
-        testCam.position.copy(midVec);
-        camera.position.copy(midVec);
-        camera.lookAt(player.position);      
+        if (!controls.enabled){
+            var midVec = new THREE.Vector3, followPos = new THREE.Vector3;
+            midVec.copy(camera.position);            
+            followCam.getWorldPosition(followPos);
+            midVec.lerp(followPos, 0.075);            
+            testCam.position.copy(midVec);
+            camera.position.copy(midVec); 
+            controls.target.copy(player.position);
+            controls.update();
+        }  
+        else{
+            controls.update();
+            controls.enableRotate = true;
+            controls.target.copy(playerBody.position);
+        }
     })
-    delta = clock.getDelta();
-    
-    //console.log("Ground", isOnGround);
+    delta = clock.getDelta();    
     handleKeyboardInput(delta, camera, player);
 }
 
@@ -323,7 +388,7 @@ function updatePhysics() {
 
     // Copy coordinates from Cannon.js to Three.js
     player.position.copy(playerBody.position);
-    player.position.y += 0.12;
+    player.position.y += 0.1;
     player.quaternion.copy(playerBody.quaternion);
 }
 
@@ -338,7 +403,6 @@ function AnyInput(keyboard){
 }
 
 function handleKeyboardInput(delta, camera, player) {
-
     if (keyboard[" "]){
         if (isOnGround){
             playerBody.velocity.y = jumpVelocity;
@@ -365,18 +429,17 @@ function handleKeyboardInput(delta, camera, player) {
         if (keyboard['D']|| keyboard['d']) {
             playerRot.y -= rotateSpeed * delta;
         }        
-       player.rotation.setFromVector3(playerRot);
-
-        playerBody.position.x = player.position.x;
-        playerBody.position.z = player.position.z;
-    }  
-    playerBody.quaternion.copy(player.quaternion);
+        player.rotation.setFromVector3(playerRot);
+        playerBody.quaternion.copy(player.quaternion);
+    }else if (keyboard['T']|| keyboard['t']) {
+        controls.enabled = !controls.enabled; 
+        controls.enableRotate = !controls.enableRotate;
+        keyboard['t'] = false;
+    }
     
 }
 
-
 var scene = init();
-console.log("Physic engine loaded")
 initCannon();
 update(renderer, scene, camera, controls, player);
 
