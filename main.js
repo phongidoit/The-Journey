@@ -10,8 +10,6 @@ import { threeToCannon, ShapeType } from 'three-to-cannon';
 
     //------player-------
 
-var gravity = -10;
-
 var scene, clock, world, timeStep=1/60, player, playerBody, controls, followCam, testCam;
 var renderer = new THREE.WebGLRenderer();
 renderer.shadowMap.enabled=true;
@@ -415,6 +413,14 @@ function handleKeyboardInput(delta, camera, player) {
         keyboard['t'] = false;
     }
     
+}
+
+function getSand(){
+    const meshGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+    const meshMat = new THREE.MeshLambertMaterial({color: 0xC2B280, wireframe:false });
+    var sand = new THREE.Mesh(meshGeo, meshMat);
+
+
 }
 
 
