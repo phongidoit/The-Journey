@@ -58,13 +58,9 @@ function init(){
 
     var ampLight = getAmbientLight(0.3);     
 
-    player = new THREE.Object3D;
-    sandEffect = new SandKickoff();
-    
-
+    player = new THREE.Object3D;    
     followCam = new THREE.Object3D;
-    followCam.position.z = 22;
-    followCam.position.y = 2;
+    followCam.position.copy(new THREE.Vector3(0,2,22));
 
     //--Add Audio-- 
     const listener = new THREE.AudioListener();
@@ -80,35 +76,31 @@ function init(){
     });
 
     player.add(followCam);
- 
     player.castShadow = true;
-    scene.add(player);
+    player.scale.set(0.2, 0.2, 0.2);
+    player.position.y=0;
 
     //--where camera should be--
     testCam = new THREE.Object3D;
     followCam.getWorldPosition(testCam.position);
 
-    scene.add(map);
-    scene.add(ampLight);
-    scene.add(light2);
-    scene.add(light2.target);
+    sandEffect = new SandKickoff();
     sandEffect.createParticle(player);
 
     light2.position.y=40;
     var sun = getSphere(2, 'white');
     sun.position.copy(light2.position);
-    scene.add(sun);
 
-    player.scale.set(0.2, 0.2, 0.2);
-    player.position.y=0;
+    //Add element to scene
+    var map_structures = [player, map, ampLight, light2, light2.target, sun];
+    for (var i=0; i< map_structures.length; i++) {scene.add(map_structures[i]);}
     
-    camera.position.x = 3; camera.position.y = 6; camera.position.z = 10;
+    camera.position.copy(new THREE.Vector3(3, 6, 10));
     camera.lookAt(new THREE.Vector3(0, 0, 0));
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enabled = false;
     controls.maxPolarAngle = Math.PI*7.75/16;
 
-    //controls.update();
     document.addEventListener('keydown', function(event) {
         keyboard[event.key] = true;
 
@@ -179,16 +171,11 @@ function getPlane(size){
 
     });
     material.map = textureLoader.load('./source/sand4.jpg');
-    material.map.wrapS = THREE.RepeatWrapping;
-    material.map.wrapT = THREE.RepeatWrapping;
+    material.map.wrapS = material.map.wrapT = THREE.RepeatWrapping;
     material.map.repeat.set(15,15);
 
-    var mesh = new THREE.Mesh(
-        geometry,
-        material,
-    );
+    var mesh = new THREE.Mesh( geometry,material);
     mesh.receiveShadow=true;
-    //mesh.position.y = -1;
     return mesh;
 }
 
@@ -217,10 +204,7 @@ function getSphere(r, color){
         color: color,
         material
     });
-    var mesh = new THREE.Mesh(
-        geometry,
-        material
-    );
+    var mesh = new THREE.Mesh( geometry,material);
     return mesh;
 }
 
@@ -337,9 +321,6 @@ function update(renderer, scene, camera, controls, player){
         playerModel.position.copy(new THREE.Vector3(0,1, -2));
         playerModel.rotation.set(Math.PI, 0, Math.PI*9.5/10);
 
-        // var result = threeToCannon(pyramid, {type: ShapeType.HULL});
-        // const {shape, offset, orientation} = result;      
-        // pyramidBody.addShape(shape, offset, orientation);
         CustomCollisionBox(pyramid, pyramidBody);
         pyramidBody.position.x = 25;
         loaded=true;
