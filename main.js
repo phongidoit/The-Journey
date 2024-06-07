@@ -60,6 +60,7 @@ function init(){
 
     player = new THREE.Object3D;
     sandEffect = new SandKickoff();
+    
 
     followCam = new THREE.Object3D;
     followCam.position.z = 22;
@@ -93,6 +94,10 @@ function init(){
     sandEffect.createParticle(player);
 
     light2.position.y=40;
+    var sun = getSphere(2, 'white');
+    sun.position.copy(light2.position);
+    scene.add(sun);
+
     player.scale.set(0.2, 0.2, 0.2);
     player.position.y=0;
     
@@ -181,15 +186,6 @@ function getPlane(size){
 
 function getAmbientLight(intensity){
     var light = new THREE.AmbientLight(0xffffff, intensity);
-    return light;
-}
-
-function getSpotLight(intensity){
-    var light = new THREE.SpotLight(0xffffff, intensity);
-    light.castShadow =true;
-    light.shadow.bias = 0.001;
-    light.shadow.mapSize.width= 1024;
-    light.shadow.mapSize.height= 1024;
     return light;
 }
 
@@ -420,8 +416,6 @@ function handleKeyboardInput(delta, camera, player) {
     }
     
 }
-
-
 
 var scene = init();
 console.log("Physic engine loaded")
