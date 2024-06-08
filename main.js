@@ -8,7 +8,7 @@ import SandKickoff from "./test.js";
 
     //------player-------
 
-var scene, clock, world, timeStep=1/60, player, playerBody, controls, followCam, testCam;
+var scene, clock, world, timeStep=1/60, player, playerBody, controls, followCam, testCam, audioLoaded=false;
 var renderer = new THREE.WebGLRenderer();
 renderer.shadowMap.enabled=true;
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -27,6 +27,7 @@ var rotateSpeed = Math.PI / 2 * 5;
 var playerRot = new THREE.Vector3(0, 0, 0);
 var jumpVelocity =  8;
 var isOnGround = true;
+
 
 scene = new THREE.Scene();
 world = new CANNON.World();
@@ -62,19 +63,6 @@ function init(){
     followCam = new THREE.Object3D;
     followCam.position.copy(new THREE.Vector3(0,2,22));
 
-    //--Add Audio-- 
-    const listener = new THREE.AudioListener();
-    camera.add( listener );
-    const sound = new THREE.Audio( listener );
-    const audioLoader = new THREE.AudioLoader();
-    audioLoader.load( 'source/audio/Journey Soundtrack (Austin Wintory) - 17. Apotheosis.mp3', function( buffer ) {
-        sound.setBuffer( buffer );
-        sound.setLoop( true );
-        sound.setVolume( 0.3 );
-        sound.play();
-        sound.resume();
-    });
-
     player.add(followCam);
     player.castShadow = true;
     player.scale.set(0.2, 0.2, 0.2);
@@ -103,10 +91,25 @@ function init(){
 
     document.addEventListener('keydown', function(event) {
         keyboard[event.key] = true;
-
     });
     document.addEventListener('keyup', function(event) {
         keyboard[event.key] = false;
+    });
+    //Due to chrome autoplay policy, Only load audio after user has interact
+    document.addEventListener('click', function(event) {
+        if (!audioLoaded){
+            document.getElementById("playAudio").innerHTML  = " ";
+            const listener = new THREE.AudioListener();
+            camera.add( listener );
+            const sound = new THREE.Audio( listener );
+            const audioLoader = new THREE.AudioLoader();
+            audioLoader.load('source/audio/Journey Soundtrack (Austin Wintory) - 17. Apotheosis.mp3', function( buffer ) {
+                sound.setBuffer( buffer );
+                sound.setLoop( true );
+                sound.setVolume( 0.3 );
+                sound.play();
+            });
+        }
     });
 
     return scene;
@@ -327,37 +330,27 @@ function update(renderer, scene, camera, controls, player){
     }
     updatePhysics();
 
+    //Particle Visible when only at ground and moving
     var container = scene.getObjectByName('sandParts');
-    if (container && isOnGround && playerModel){
-        container.visible = true;
-        container.position.copy(playerModel.position);
-        container.position.z += 3;
-        container.position.y -= 0.5;
-        sandEffect.animate(container);
-    }
-    else if(container && !isOnGround){
-        container.visible = false;
+    if (container){
+        if (isOnGround && playerModel){
+            container.visible = true;
+            container.position.copy(playerModel.position);
+            container.position.z += 3;
+            container.position.y -= 0.5;
+            sandEffect.animate(container);
+        }
+        else if (!isOnGround){
+            container.visible = false;
+        }
     }
 
     cannonDebugger.update(); 
     renderer.render( scene, camera);
     requestAnimationFrame(function(){
         update(renderer, scene, camera, controls, player);
-        if (!controls.enabled){
-            var midVec = new THREE.Vector3, followPos = new THREE.Vector3;
-            midVec.copy(camera.position);            
-            followCam.getWorldPosition(followPos);
-            midVec.lerp(followPos, 0.075);            
-            testCam.position.copy(midVec);
-            camera.position.copy(midVec); 
-            controls.target.copy(player.position);
-            controls.update();
-        }  
-        else{
-            controls.update();
-            controls.enableRotate = true;
-            controls.target.copy(playerBody.position);
-        }
+        cameraControl(controls);
+
     })
     delta = clock.getDelta();    
     handleKeyboardInput(delta, camera, player);
@@ -418,6 +411,24 @@ function handleKeyboardInput(delta, camera, player) {
         keyboard['t'] = false;
     }
     
+}
+
+function cameraControl(controls){
+    if (!controls.enabled){
+        var midVec = new THREE.Vector3, followPos = new THREE.Vector3;
+        midVec.copy(camera.position);            
+        followCam.getWorldPosition(followPos);
+        midVec.lerp(followPos, 0.075);            
+        testCam.position.copy(midVec);
+        camera.position.copy(midVec); 
+        controls.target.copy(player.position);
+        controls.update();
+    }  
+    else{
+        controls.update();
+        controls.enableRotate = true;
+        controls.target.copy(playerBody.position);
+    }
 }
 
 var scene = init();
