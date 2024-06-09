@@ -1,0 +1,11 @@
+Model Information:
+* title:	Medieval Ruin Entrance
+* source:	https://sketchfab.com/3d-models/medieval-ruin-entrance-711292d5a5c343ceb675782b24f213ee
+* author:	BytesCrafter (https://sketchfab.com/BytesCrafter)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Medieval Ruin Entrance" (https://sketchfab.com/3d-models/medieval-ruin-entrance-711292d5a5c343ceb675782b24f213ee) by BytesCrafter (https://sketchfab.com/BytesCrafter) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

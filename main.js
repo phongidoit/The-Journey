@@ -222,8 +222,18 @@ function getMap(){
     const loaderPyra = new GLTFLoader();
     const loadPillar = new GLTFLoader();
     const tomb = new GLTFLoader();
+    const column = new GLTFLoader();
+    const statue = new GLTFLoader();
+    const tunnel= new GLTFLoader();
+    const pyra = new GLTFLoader();
+    const plants = new GLTFLoader();
+    const church = new GLTFLoader();
+    const entrance = new GLTFLoader();
+    const tample = new GLTFLoader();
 
     map.add(plane);
+
+   
 
     //Load gltf 3d file
     loaderPyra.load(
@@ -243,6 +253,24 @@ function getMap(){
         }    
     );   
     
+    pyra.load(
+        // resource URL
+        'source/pyramid2/scene.gltf',
+        // called when the resource is loaded
+        function ( gltf ) { 
+            map.add( gltf.scene );
+            gltf.scene.scale.set(6, 6, 6);
+            gltf.scene.position.y = -1;
+            gltf.scene.position.x = 7;
+            gltf.scene.position.z = -120;
+
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {elementNames.push(node.name); node.castShadow=true; }
+                node.receiveShadow=true;
+            }) ;
+        }    
+    );  
+
     loadPillar.load(
         // resource URL
         'source/Pillar/scene.gltf',
@@ -251,8 +279,8 @@ function getMap(){
             map.add( gltf.scene );
             gltf.scene.scale.set(0.4, 0.4, 0.4);
             gltf.scene.position.y = -0.05;
-            gltf.scene.position.x = 5;
-    
+            gltf.scene.position.x = -3;
+            gltf.scene.position.z = -30;
             gltf.scene.traverse(function(node){
                 if (node.isMesh) {console.log('here');elementNames.push(node.name);node.castShadow=true; }
                 node.receiveShadow=true;
@@ -267,9 +295,9 @@ function getMap(){
 
         function ( gltf ) { 
             map.add( gltf.scene );
-            gltf.scene.scale.set(0.8, 0.8, 0.8);
-            gltf.scene.position.y = 0.1;
-            gltf.scene.position.x = -10;
+            gltf.scene.scale.set(0.8, 0.8, 0.5);
+            gltf.scene.position.y = 0.3;
+            gltf.scene.position.x = -15;
     
             gltf.scene.traverse(function(node){
                 if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
@@ -278,7 +306,188 @@ function getMap(){
             
         }    
     ); 
+
+    column.load(
+        // resource URL
+        'source/column/desert_columns/scene.gltf',
+
+        function ( gltf ) { 
+            map.add( gltf.scene );
+            gltf.scene.scale.set(1, 1, 1);
+            gltf.scene.position.y = 0.1;
+            gltf.scene.position.x = -15;
+            gltf.scene.position.z = 30;
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
+                node.receiveShadow=true;
+            }) ;
+            
+        }    
+    ); 
+
+    statue.load(
+        // resource URL
+        'source/statue/4k_ancient_roman_statue_megascan/scene.gltf',
+        // called when the resource is loaded
+        function ( gltf ) { 
+            map.add( gltf.scene );
+            gltf.scene.scale.set(4, 4, 4);
+            gltf.scene.position.y = 0.1;
+            gltf.scene.position.x = 10;
+            gltf.scene.position.z = 60;
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {elementNames.push(node.name); node.castShadow=true; }
+                node.receiveShadow=true;
+            }) ;
+        }    
+    );   
     
+    tunnel.load(
+        // resource URL
+        'source/tunnel/ancient_tunnel/scene.gltf',
+        // called when the resource is loaded
+        function ( gltf ) { 
+            map.add( gltf.scene );
+            gltf.scene.scale.set(0.8, 0.8, 0.8);
+            gltf.scene.position.y = 0.1;
+            gltf.scene.position.x = 15;
+            gltf.scene.position.z = 100;
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {elementNames.push(node.name); node.castShadow=true; }
+                node.receiveShadow=true;
+            }) ;
+        }    
+    );   
+
+    plants.load(
+        // resource URL
+        'source/plants/desert_shrubs/scene.gltf',
+
+        function ( gltf ) { 
+            map.add( gltf.scene );
+            gltf.scene.scale.set(2, 2, 2);
+            gltf.scene.position.y = -1;
+            gltf.scene.position.x = -15;
+            gltf.scene.position.z = 30;
+
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
+                node.receiveShadow=true;
+            }) ;
+            
+        }    
+    ); 
+
+    plants.load(
+        // resource URL
+        'source/plants/desert_shrubs/scene.gltf',
+
+        function ( gltf ) { 
+            map.add( gltf.scene );
+            gltf.scene.scale.set(2, 2, 2);
+            gltf.scene.position.y = -1;
+            gltf.scene.position.x = 14;
+            gltf.scene.position.z = 50;
+
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
+                node.receiveShadow=true;
+            }) ;
+            
+        }    
+    ); 
+    plants.load(
+        // resource URL
+        'source/plants/desert_shrubs/scene.gltf',
+
+        function ( gltf ) { 
+            map.add( gltf.scene );
+            gltf.scene.scale.set(2, 2, 2);
+            gltf.scene.position.y = -1;
+            gltf.scene.position.x = 30;
+            gltf.scene.position.z = 55;
+
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
+                node.receiveShadow=true;
+            }) ;
+            
+        }    
+    ); 
+    plants.load(
+        // resource URL
+        'source/plants/desert_shrubs/scene.gltf',
+
+        function ( gltf ) { 
+            map.add( gltf.scene );
+            gltf.scene.scale.set(2, 2, 2);
+            gltf.scene.position.y = -1;
+            gltf.scene.position.x = -5;
+            gltf.scene.position.z = 75;
+
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
+                node.receiveShadow=true;
+            }) ;
+            
+        }    
+    )
+
+    church.load(
+        // resource URL
+        'source/church/ruined_elden_ring_church/scene.gltf',
+
+        function ( gltf ) { 
+            map.add( gltf.scene );
+            gltf.scene.scale.set(5, 5, 5);
+            gltf.scene.position.y = 0.1;
+            gltf.scene.position.x = -55;
+            gltf.scene.position.z = -45;
+
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
+                node.receiveShadow=true;
+            }) ;
+            
+        }    
+    )
+    entrance.load(
+        // resource URL
+        'source/entrance/medieval_ruin_entrance/scene.gltf',
+
+        function ( gltf ) { 
+            map.add( gltf.scene );
+            gltf.scene.scale.set(5, 5, 5);
+            gltf.scene.position.y = 1;
+            gltf.scene.position.x = 0;
+            gltf.scene.position.z = 0;
+
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
+                node.receiveShadow=true;
+            }) ;
+            
+        }    
+    )
+    tample.load(
+        // resource URL
+        'source/tample/medieval_ruin_tample/scene.gltf',
+
+        function ( gltf ) { 
+            map.add( gltf.scene );
+            gltf.scene.scale.set(2, 2, 2);
+            gltf.scene.position.y = 1;
+            gltf.scene.position.x = 0;
+            gltf.scene.position.z = 0;
+
+            gltf.scene.traverse(function(node){
+                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
+                node.receiveShadow=true;
+            }) ;
+            
+        }    
+    )
+
     loaderChar.load(
         'source/Character2/scene.gltf',
         function(gltf){

@@ -1,0 +1,11 @@
+Model Information:
+* title:	4k Ancient roman statue (megascan)
+* source:	https://sketchfab.com/3d-models/4k-ancient-roman-statue-megascan-9bf6c2aafe0849fdbf9b8427585c4d12
+* author:	Lokaton (https://sketchfab.com/Lokaton)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "4k Ancient roman statue (megascan)" (https://sketchfab.com/3d-models/4k-ancient-roman-statue-megascan-9bf6c2aafe0849fdbf9b8427585c4d12) by Lokaton (https://sketchfab.com/Lokaton) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
