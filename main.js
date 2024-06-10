@@ -28,7 +28,6 @@ var playerRot = new THREE.Vector3(0, 0, 0);
 var jumpVelocity =  8;
 var isOnGround = true;
 
-
 scene = new THREE.Scene();
 world = new CANNON.World();
 var cannonDebugger = new CannonDebugger( scene, world, {
@@ -43,7 +42,10 @@ var cannonDebugger = new CannonDebugger( scene, world, {
 });
 
 //---here are model stuff for physic---
+var colEle=[];
 var pyramid, pyramidBody = new CANNON.Body();
+var statue, statueBody = new CANNON.Body();
+var col, colBodys =[] ;
 var loaded=false;
 var clock2=new THREE.Clock();
 
@@ -87,7 +89,7 @@ function init(){
     camera.lookAt(new THREE.Vector3(0, 0, 0));
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enabled = false;
-    controls.maxPolarAngle = Math.PI*7.75/16;
+    controls.maxPolarAngle = Math.PI*7.95/16;
 
     document.addEventListener('keydown', function(event) {
         keyboard[event.key] = true;
@@ -107,7 +109,7 @@ function init(){
                 sound.setBuffer( buffer );
                 sound.setLoop( true );
                 sound.setVolume( 0.3 );
-                sound.play();
+                //sound.play();
             });
         }
     });
@@ -130,7 +132,6 @@ function initCannon() {
         material: bodyMat
     });
     playerBody.addEventListener("collide",function(e){isOnGround=true;})
-    //world.addBody(playerBody);
 
     // Create a plane
     var groundBody = new CANNON.Body({
@@ -149,14 +150,22 @@ function initCannon() {
     }
 
     //Set hitbox for map elements
-    var pillarBody = staticBody([5, 0.01, 0], [0.35, 2.5, 0.3]);
-    var tombBody = staticBody([-10.25, 0.01, 0.52], [0.2, 1, 0.2]);
+    var pillarBody = staticBody([-3, 0.01, -30], [0.35, 2.5, 0.3]);
+    var tombBody = staticBody([-15.25, 0.01, 0.35], [0.2, 1.25, 0.1]);
+
+    var col0 ,col1, col2, col3, col4, col5;
+    col0 = staticBody([-4.2, 0.01, 30], [0.6, 6.2, 0.6]);
+    col1 = staticBody([-4.2, 0.01, 41.1], [0.6, 5.5, 0.6]);
+    col2 = staticBody([-4.2, 0.01, 52.4], [0.6, 6.3, 0.6]);
+    col3 = staticBody([-25.7, 0.01, 30], [0.6, 6.3, 0.6]);
+    col4 = staticBody([-25.7, 0.01, 41], [0.62, 5.5, 0.64]);
+    col5 = staticBody([-25.7, 0.01, 52.4], [0.6, 4.3, 0.6]);
 
     groundBody.addShape(new CANNON.Plane());
     groundBody.quaternion.setFromEuler(-Math.PI/2, 0, 0);
 
     //add element to Physic world
-    const listBody = [groundBody, playerBody, tombBody, pillarBody, pyramidBody];
+    const listBody = [groundBody, playerBody, tombBody, pillarBody, pyramidBody, statueBody, col0, col1, col2, col3, col4, col5 ];
     for (var index=0; index< listBody.length; index++){world.addBody(listBody[index]);}
 }
 
@@ -223,7 +232,7 @@ function getMap(){
     const loadPillar = new GLTFLoader();
     const tomb = new GLTFLoader();
     const column = new GLTFLoader();
-    const statue = new GLTFLoader();
+    const loaderStatue = new GLTFLoader();
     const tunnel= new GLTFLoader();
     const pyra = new GLTFLoader();
     const plants = new GLTFLoader();
@@ -232,8 +241,6 @@ function getMap(){
     const tample = new GLTFLoader();
 
     map.add(plane);
-
-   
 
     //Load gltf 3d file
     loaderPyra.load(
@@ -253,24 +260,6 @@ function getMap(){
         }    
     );   
     
-    pyra.load(
-        // resource URL
-        'source/pyramid2/scene.gltf',
-        // called when the resource is loaded
-        function ( gltf ) { 
-            map.add( gltf.scene );
-            gltf.scene.scale.set(6, 6, 6);
-            gltf.scene.position.y = -1;
-            gltf.scene.position.x = 7;
-            gltf.scene.position.z = -120;
-
-            gltf.scene.traverse(function(node){
-                if (node.isMesh) {elementNames.push(node.name); node.castShadow=true; }
-                node.receiveShadow=true;
-            }) ;
-        }    
-    );  
-
     loadPillar.load(
         // resource URL
         'source/Pillar/scene.gltf',
@@ -282,7 +271,7 @@ function getMap(){
             gltf.scene.position.x = -3;
             gltf.scene.position.z = -30;
             gltf.scene.traverse(function(node){
-                if (node.isMesh) {console.log('here');elementNames.push(node.name);node.castShadow=true; }
+                if (node.isMesh) {node.castShadow=true; }
                 node.receiveShadow=true;
             }) ;
             
@@ -300,32 +289,14 @@ function getMap(){
             gltf.scene.position.x = -15;
     
             gltf.scene.traverse(function(node){
-                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
+                if (node.isMesh) {node.castShadow=true; }
                 node.receiveShadow=true;
             }) ;
             
         }    
     ); 
 
-    column.load(
-        // resource URL
-        'source/column/desert_columns/scene.gltf',
-
-        function ( gltf ) { 
-            map.add( gltf.scene );
-            gltf.scene.scale.set(1, 1, 1);
-            gltf.scene.position.y = 0.1;
-            gltf.scene.position.x = -15;
-            gltf.scene.position.z = 30;
-            gltf.scene.traverse(function(node){
-                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
-                node.receiveShadow=true;
-            }) ;
-            
-        }    
-    ); 
-
-    statue.load(
+    loaderStatue.load(
         // resource URL
         'source/statue/4k_ancient_roman_statue_megascan/scene.gltf',
         // called when the resource is loaded
@@ -342,41 +313,23 @@ function getMap(){
         }    
     );   
     
-    tunnel.load(
+    column.load(
         // resource URL
-        'source/tunnel/ancient_tunnel/scene.gltf',
-        // called when the resource is loaded
+        'source/column/desert_columns/scene.gltf',
         function ( gltf ) { 
             map.add( gltf.scene );
-            gltf.scene.scale.set(0.8, 0.8, 0.8);
-            gltf.scene.position.y = 0.1;
-            gltf.scene.position.x = 15;
-            gltf.scene.position.z = 100;
-            gltf.scene.traverse(function(node){
-                if (node.isMesh) {elementNames.push(node.name); node.castShadow=true; }
-                node.receiveShadow=true;
-            }) ;
-        }    
-    );   
-
-    plants.load(
-        // resource URL
-        'source/plants/desert_shrubs/scene.gltf',
-
-        function ( gltf ) { 
-            map.add( gltf.scene );
-            gltf.scene.scale.set(2, 2, 2);
-            gltf.scene.position.y = -1;
+            gltf.scene.scale.set(1, 1, 1);
+            gltf.scene.position.y = -2;
             gltf.scene.position.x = -15;
             gltf.scene.position.z = 30;
-
             gltf.scene.traverse(function(node){
-                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
+                if (node.isMesh) {colEle.push(node.name); elementNames.push(node.name); node.castShadow=true; }
                 node.receiveShadow=true;
             }) ;
             
         }    
-    ); 
+    );  
+
 
     plants.load(
         // resource URL
@@ -387,7 +340,7 @@ function getMap(){
             gltf.scene.scale.set(2, 2, 2);
             gltf.scene.position.y = -1;
             gltf.scene.position.x = 14;
-            gltf.scene.position.z = 50;
+            gltf.scene.position.z = 30;
 
             gltf.scene.traverse(function(node){
                 if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
@@ -433,60 +386,7 @@ function getMap(){
         }    
     )
 
-    church.load(
-        // resource URL
-        'source/church/ruined_elden_ring_church/scene.gltf',
 
-        function ( gltf ) { 
-            map.add( gltf.scene );
-            gltf.scene.scale.set(5, 5, 5);
-            gltf.scene.position.y = 0.1;
-            gltf.scene.position.x = -55;
-            gltf.scene.position.z = -45;
-
-            gltf.scene.traverse(function(node){
-                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
-                node.receiveShadow=true;
-            }) ;
-            
-        }    
-    )
-    entrance.load(
-        // resource URL
-        'source/entrance/medieval_ruin_entrance/scene.gltf',
-
-        function ( gltf ) { 
-            map.add( gltf.scene );
-            gltf.scene.scale.set(5, 5, 5);
-            gltf.scene.position.y = 1;
-            gltf.scene.position.x = 0;
-            gltf.scene.position.z = 0;
-
-            gltf.scene.traverse(function(node){
-                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
-                node.receiveShadow=true;
-            }) ;
-            
-        }    
-    )
-    tample.load(
-        // resource URL
-        'source/tample/medieval_ruin_tample/scene.gltf',
-
-        function ( gltf ) { 
-            map.add( gltf.scene );
-            gltf.scene.scale.set(2, 2, 2);
-            gltf.scene.position.y = 1;
-            gltf.scene.position.x = 0;
-            gltf.scene.position.z = 0;
-
-            gltf.scene.traverse(function(node){
-                if (node.isMesh) {elementNames.push(node.name);node.castShadow=true; }
-                node.receiveShadow=true;
-            }) ;
-            
-        }    
-    )
 
     loaderChar.load(
         'source/Character2/scene.gltf',
@@ -522,11 +422,13 @@ function CustomCollisionBox(model, modelBody){
 function update(renderer, scene, camera, controls, player){
     pyramid = scene.getObjectByName(elementNames[0]);
     var playerModel = scene.getObjectByName("player");
+    statue = scene.getObjectByName("Aset_stone_carved_L_tgsibj3fa_LOD0__0");
+    col = scene.getObjectByName("defaultMaterial_5");
     updateLight();
     //--ADD the body for model after they load
     var t= clock2.getElapsedTime();
 
-    if (!loaded && t>1.8 && playerModel && pyramid){
+    if (!loaded && t>4 && playerModel && pyramid && statue){
         player.add(playerModel);
         playerModel.visible = true;
         playerModel.scale.set(0.2, 0.2, 0.2);
@@ -535,21 +437,26 @@ function update(renderer, scene, camera, controls, player){
 
         CustomCollisionBox(pyramid, pyramidBody);
         pyramidBody.position.x = 25;
+
+        CustomCollisionBox(statue, statueBody);
+        statueBody.position.copy(new THREE.Vector3(10, 0.1, 60));
+
         loaded=true;
     }
     updatePhysics();
 
+    //console.log(elementNames);
     //Particle Visible when only at ground and moving
     var container = scene.getObjectByName('sandParts');
     if (container){
-        if (isOnGround && playerModel){
+        if (isOnGround && AnyInput(keyboard) && playerModel ){
             container.visible = true;
             container.position.copy(playerModel.position);
             container.position.z += 3;
             container.position.y -= 0.5;
             sandEffect.animate(container);
         }
-        else if (!isOnGround){
+        else{
             container.visible = false;
         }
     }
