@@ -15,7 +15,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor('rgb(135,206,235)');
 document.getElementById('webgl').appendChild(renderer.domElement);
 
-var camera = new THREE.PerspectiveCamera( 50, window.innerWidth/window.innerHeight, 0.1, 50);
+var camera = new THREE.PerspectiveCamera( 50, window.innerWidth/window.innerHeight, 0.1, 80);
 window.camera = camera;
 var light2 = getDirectionalLight();
 
@@ -109,7 +109,7 @@ function init(){
                 sound.setBuffer( buffer );
                 sound.setLoop( true );
                 sound.setVolume( 0.3 );
-                //sound.play();
+                sound.play();
             });
         }
     });
@@ -428,7 +428,7 @@ function update(renderer, scene, camera, controls, player){
     //--ADD the body for model after they load
     var t= clock2.getElapsedTime();
 
-    if (!loaded && t>4 && playerModel && pyramid && statue){
+    if (!loaded && t>6 && playerModel && pyramid && statue){
         player.add(playerModel);
         playerModel.visible = true;
         playerModel.scale.set(0.2, 0.2, 0.2);
