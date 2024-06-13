@@ -330,7 +330,6 @@ function getMap(){
         }    
     );  
 
-
     plants.load(
         // resource URL
         'source/plants/desert_shrubs/scene.gltf',
