@@ -21,12 +21,12 @@ Trần Nhật Phong - 21521276
 ## Installation guide
 1. Clone this repository
 2. Run following line at the repository folder
-    > python -m server.py
+    > python -u server.py
 3. Open `127.0.0.1:8080` on the device browser
 4. Enjor the game.
 
 ## Video demo
-[Video](https://duckduckgo.com)
+[Video](https://drive.google.com/file/d/1b966s1vQoBHynHWhVtxQGf2VP2D6eFH1/view?usp=sharing)
 
 ## Resource that use in this project  
 The 3D model in this project is downloaded from Sketchfab.com and added to map scene.  
