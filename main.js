@@ -19,11 +19,11 @@ var camera = new THREE.PerspectiveCamera( 50, window.innerWidth/window.innerHeig
 window.camera = camera;
 var light2 = getDirectionalLight();
 
+//Movement and control
 var keyboard = {};
 var moveSpeed = 6;
 var delta = 0;
 var rotateSpeed = Math.PI / 2 * 5;
-
 var playerRot = new THREE.Vector3(0, 0, 0);
 var jumpVelocity =  8;
 var isOnGround = true;
@@ -45,7 +45,6 @@ var cannonDebugger = new CannonDebugger( scene, world, {
 var colEle=[];
 var pyramid, pyramidBody = new CANNON.Body();
 var statue, statueBody = new CANNON.Body();
-var col, colBodys =[] ;
 var loaded=false;
 var clock2=new THREE.Clock();
 
@@ -138,7 +137,7 @@ function initCannon() {
         mass: 0 // mass == 0 makes the body static
     });
 
-    //Use this function to add Hitbox
+    //Function to add Stativ Hitbox
     function staticBody(pos, size){
         var temp = new CANNON.Body({
             mass: 0,
@@ -153,6 +152,7 @@ function initCannon() {
     var pillarBody = staticBody([-3, 0.01, -30], [0.35, 2.5, 0.3]);
     var tombBody = staticBody([-15.25, 0.01, 0.35], [0.2, 1.25, 0.1]);
 
+    //set of column hitbox
     var col0 ,col1, col2, col3, col4, col5;
     col0 = staticBody([-4.2, 0.01, 30], [0.6, 6.2, 0.6]);
     col1 = staticBody([-4.2, 0.01, 41.1], [0.6, 5.5, 0.6]);
@@ -233,12 +233,9 @@ function getMap(){
     const tomb = new GLTFLoader();
     const column = new GLTFLoader();
     const loaderStatue = new GLTFLoader();
-    const tunnel= new GLTFLoader();
     const pyra = new GLTFLoader();
     const plants = new GLTFLoader();
-    const church = new GLTFLoader();
-    const entrance = new GLTFLoader();
-    const tample = new GLTFLoader();
+
 
     map.add(plane);
 
@@ -333,7 +330,6 @@ function getMap(){
     plants.load(
         // resource URL
         'source/plants/desert_shrubs/scene.gltf',
-
         function ( gltf ) { 
             map.add( gltf.scene );
             gltf.scene.scale.set(2, 2, 2);
@@ -351,7 +347,6 @@ function getMap(){
     plants.load(
         // resource URL
         'source/plants/desert_shrubs/scene.gltf',
-
         function ( gltf ) { 
             map.add( gltf.scene );
             gltf.scene.scale.set(2, 2, 2);
@@ -369,7 +364,6 @@ function getMap(){
     plants.load(
         // resource URL
         'source/plants/desert_shrubs/scene.gltf',
-
         function ( gltf ) { 
             map.add( gltf.scene );
             gltf.scene.scale.set(2, 2, 2);
@@ -384,8 +378,6 @@ function getMap(){
             
         }    
     )
-
-
 
     loaderChar.load(
         'source/Character2/scene.gltf',
@@ -424,10 +416,10 @@ function update(renderer, scene, camera, controls, player){
     statue = scene.getObjectByName("Aset_stone_carved_L_tgsibj3fa_LOD0__0");
     col = scene.getObjectByName("defaultMaterial_5");
     updateLight();
-    //--ADD the body for model after they load
+    //--ADD the body for 3D model after they load
     var t= clock2.getElapsedTime();
 
-    if (!loaded && t>6 && playerModel && pyramid && statue){
+    if (!loaded && t>4 && playerModel && pyramid && statue){
         player.add(playerModel);
         playerModel.visible = true;
         playerModel.scale.set(0.2, 0.2, 0.2);
@@ -444,7 +436,7 @@ function update(renderer, scene, camera, controls, player){
     }
     updatePhysics();
 
-    //console.log(elementNames);
+
     //Particle Visible when only at ground and moving
     var container = scene.getObjectByName('sandParts');
     if (container){
